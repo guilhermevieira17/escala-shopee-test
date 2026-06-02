@@ -3,1113 +3,2954 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestão de Escala – Shopee Last Mile</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<title>Escala Shopee</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
 <style>
-:root {
-  --orange:#EE4D2D; --orange-dark:#c73e23; --orange-light:#fff3f0;
-  --bg:#f5f5f5; --white:#fff; --text:#333; --text-light:#666;
-  --border:#e0e0e0; --radius:8px; --shadow:0 2px 8px rgba(0,0,0,.1);
-  --green:#27ae60; --red:#e74c3c; --blue:#2980b9; --yellow:#f39c12;
-  --purple:#8e44ad; --gray:#95a5a6;
+:root{
+  --sp:#EE4D2D;--sp-dark:#C43B1F;--sp-light:#FFF0ED;
+  --txt:#1a1a1a;--muted:#757575;--border:#E8E8E8;
+  --bg:#F5F5F5;--white:#fff;
+  --green:#00B14F;--orange:#FF9500;--red:#EE4D2D;--blue:#2E7CF6;
+  /* Sidebar nova */
+  --sb-bg:#1a1a2e;--sb-accent:rgba(238,77,45,.18);--sb-border:rgba(255,255,255,.08);
+  --sb-text:rgba(255,255,255,.75);--sb-text-active:#fff;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-/* SIDEBAR */
-.sidebar{position:fixed;left:0;top:0;width:220px;height:100vh;background:#1a1a2e;color:#fff;display:flex;flex-direction:column;z-index:100;overflow-y:auto}
-.sidebar-logo{padding:20px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
-.sidebar-logo .brand{font-size:13px;color:#aaa;margin-bottom:4px}
-.sidebar-logo .title{font-size:16px;font-weight:700;color:#fff}
-.sidebar-logo .subtitle{font-size:11px;color:var(--orange);margin-top:2px}
-.sidebar-hub{padding:10px 16px;background:rgba(238,77,45,.15);border-bottom:1px solid rgba(255,255,255,.1)}
-.sidebar-hub .hub-name{font-size:12px;font-weight:600;color:var(--orange)}
-.sidebar-hub .hub-date{font-size:11px;color:#aaa;margin-top:2px}
-.nav-section{padding:12px 16px 4px;font-size:10px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;color:#ccc;font-size:13px;transition:all .2s;border-left:3px solid transparent}
-.nav-item:hover{background:rgba(255,255,255,.05);color:#fff}
-.nav-item.active{background:rgba(238,77,45,.15);color:var(--orange);border-left-color:var(--orange)}
-.nav-icon{font-size:16px;width:20px;text-align:center}
-/* MAIN */
-.main{margin-left:220px;min-height:100vh;padding:24px}
-.page{display:none}
-.page.active{display:block}
-/* HEADER */
-.page-header{margin-bottom:24px}
-.page-header h1{font-size:22px;font-weight:700;color:var(--text)}
-.page-header p{color:var(--text-light);font-size:14px;margin-top:4px}
-/* CARDS */
-.cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
-.card{background:var(--white);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
-.card-value{font-size:28px;font-weight:700;color:var(--orange)}
-.card-label{font-size:13px;color:var(--text-light);margin-top:4px}
-.card-sub{font-size:11px;color:var(--gray);margin-top:2px}
-/* BUTTONS */
-.btn{padding:8px 16px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
-.btn-primary{background:var(--orange);color:#fff}.btn-primary:hover{background:var(--orange-dark)}
-.btn-secondary{background:var(--white);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{background:#f9f9f9}
-.btn-success{background:var(--green);color:#fff}.btn-success:hover{background:#229954}
-.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:#c0392b}
-.btn-sm{padding:5px 10px;font-size:12px}
-/* FORMS */
-.form-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end}
-.form-group{display:flex;flex-direction:column;gap:4px}
-.form-group label{font-size:12px;font-weight:600;color:var(--text-light)}
-.form-group select,.form-group input,.form-group textarea{padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;outline:none;font-family:inherit}
-.form-group select:focus,.form-group input:focus{border-color:var(--orange)}
-/* TABLE */
-.table-wrap{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
-.table-header{padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
-.table-header h3{font-size:15px;font-weight:700}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{background:#f8f8f8;padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border)}
-td{padding:9px 12px;border-bottom:1px solid #f0f0f0}
-tr:hover td{background:#fafafa}
-/* BADGES */
-.badge{display:inline-block;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:600}
-.badge-am{background:#fff3cd;color:#856404}
-.badge-sd{background:#d1ecf1;color:#0c5460}
-.badge-ambos{background:#d4edda;color:#155724}
-.badge-passeio{background:#e8f4fd;color:#1a5276}
-.badge-fiorino{background:#fce8f3;color:#76448a}
-.badge-moto{background:#fef9e7;color:#7d6608}
-.badge-van{background:#e8f8f5;color:#1e8449}
-.badge-ok{background:#d4edda;color:#155724}
-.badge-warn{background:#fff3cd;color:#856404}
-.badge-err{background:#f8d7da;color:#721c24}
-/* TURNO SELECTOR */
-.turno-select{display:flex;gap:0;border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-bottom:20px;width:fit-content}
-.turno-btn{padding:10px 24px;border:none;cursor:pointer;font-size:13px;font-weight:600;background:var(--white);color:var(--text-light);transition:all .2s}
-.turno-btn.active{background:var(--orange);color:#fff}
-/* UPLOAD AREA */
-.upload-area{border:2px dashed var(--border);border-radius:var(--radius);padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:var(--white)}
-.upload-area:hover{border-color:var(--orange);background:var(--orange-light)}
-.upload-area.dragging{border-color:var(--orange);background:var(--orange-light)}
-.upload-icon{font-size:40px;margin-bottom:12px}
-.upload-title{font-size:15px;font-weight:600;margin-bottom:6px}
-.upload-sub{font-size:13px;color:var(--text-light)}
-/* ESCALA TABLE */
-.escala-row-assigned td{background:#f0fff4}
-.escala-row-empty td{background:#fff8f0}
-.driver-select{width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:var(--white)}
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:none;align-items:center;justify-content:center}
-.modal-overlay.open{display:flex}
-.modal{background:var(--white);border-radius:12px;padding:24px;width:90%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto}
-.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.modal-header h3{font-size:17px;font-weight:700}
-.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-light);padding:4px 8px}
-.modal-close:hover{color:var(--red)}
-/* ALERT */
-.alert{padding:12px 16px;border-radius:6px;font-size:13px;margin-bottom:16px}
-.alert-info{background:#e8f4fd;color:#1a5276;border-left:4px solid #2980b9}
-.alert-warn{background:#fef9e7;color:#7d6608;border-left:4px solid #f39c12}
-.alert-success{background:#d4edda;color:#155724;border-left:4px solid #27ae60}
-.alert-err{background:#f8d7da;color:#721c24;border-left:4px solid #e74c3c}
-/* TABS */
-.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
-.tab{padding:10px 20px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-light);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
-.tab.active{color:var(--orange);border-bottom-color:var(--orange)}
-.tab:hover{color:var(--text)}
-.tab-content{display:none}.tab-content.active{display:block}
-/* STEP INDICATOR */
-.steps{display:flex;gap:0;margin-bottom:28px;background:var(--white);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow);align-items:center}
-.step{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-light)}
-.step.active{color:var(--orange);font-weight:600}
-.step.done{color:var(--green)}
-.step-num{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
-.step.active .step-num{border-color:var(--orange);background:var(--orange);color:#fff}
-.step.done .step-num{border-color:var(--green);background:var(--green);color:#fff}
-.step-sep{flex:1;height:1px;background:var(--border);margin:0 8px}
-/* NS INDICATOR */
-.ns-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700}
-.ns-0{background:#d4edda;color:#155724}
-.ns-1,.ns-2{background:#fff3cd;color:#856404}
-.ns-3,.ns-4{background:#ffe5cc;color:#7d4e00}
-.ns-5plus{background:#f8d7da;color:#721c24}
-/* PRINT */
-@media print{
-  .sidebar,.btn,.nav-item,.modal-overlay{display:none!important}
-  .main{margin-left:0;padding:0}
-  table{font-size:11px}
-  th,td{padding:6px 8px}
-}
-/* RESPONSIVE */
-@media(max-width:768px){
-  .sidebar{width:60px;overflow:hidden}
-  .sidebar-logo .title,.sidebar-logo .subtitle,.nav-item span,.nav-section,.sidebar-hub .hub-name,.sidebar-hub .hub-date{display:none}
-  .main{margin-left:60px;padding:16px}
-}
-.spinner{display:inline-block;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-/* RODIZIO */
-.rodizio-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-.rodizio-card{background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);border-left:4px solid var(--orange)}
-.rodizio-card.penalizado{border-left-color:var(--red)}
-.rodizio-card .driver-name{font-weight:700;font-size:14px;margin-bottom:4px}
-.rodizio-card .driver-meta{font-size:12px;color:var(--text-light);display:flex;gap:8px;flex-wrap:wrap}
-/* RESULTS TABLE */
-.result-section{margin-bottom:24px}
-.result-section h3{font-size:15px;font-weight:700;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--orange)}
-.driver-chip{display:inline-flex;align-items:center;gap:6px;background:var(--orange-light);border:1px solid var(--orange);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--orange-dark);margin:3px}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--txt);display:flex;min-height:100vh;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;min-width:220px;background:var(--sb-bg);display:flex;flex-direction:column;padding:0;position:fixed;top:0;left:0;height:100vh;z-index:200;box-shadow:2px 0 12px rgba(0,0,0,.18);}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--sb-border);}
+.sidebar-logo .s-icon{width:36px;height:36px;background:var(--sp);border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;box-shadow:0 2px 8px rgba(238,77,45,.4);}
+.sidebar-logo .s-icon span{font-size:18px;font-weight:800;color:#fff;}
+.sidebar-logo h1{font-size:13px;font-weight:600;color:#fff;line-height:1.4;}
+.sidebar-logo p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;}
+.sidebar-nav{padding:12px 0;flex:1;overflow-y:auto;}
+.nav-section{font-size:10px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.1em;padding:14px 16px 5px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;font-weight:500;color:var(--sb-text);cursor:pointer;border-left:3px solid transparent;transition:all .15s;}
+.nav-item:hover{background:rgba(255,255,255,.06);color:var(--sb-text-active);}
+.nav-item.active{background:var(--sb-accent);color:var(--sb-text-active);border-left-color:var(--sp);}
+.nav-item i{font-size:16px;flex-shrink:0;opacity:.8;}
+.nav-item.active i{opacity:1;}
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--sb-border);font-size:11px;color:rgba(255,255,255,.45);}
+.sidebar-footer b{color:rgba(255,255,255,.8);display:block;margin-bottom:2px;}
+
+/* ── TOPBAR ── */
+.main-wrap{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.topbar h2{font-size:15px;font-weight:700;color:var(--txt);}
+.topbar .breadcrumb{font-size:11px;color:var(--muted);letter-spacing:.01em;}
+.topbar .topbar-right{display:flex;align-items:center;gap:12px;}
+.topbar .status-badge{font-size:11px;padding:4px 10px;border-radius:99px;font-weight:600;}
+.status-ok{background:#E8F5E9;color:#1B5E20;}
+.main-content{padding:20px 24px;flex:1;}
+
+/* ── PAGE TITLE ── */
+.page-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px;}
+
+/* ── CARDS ── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+.kpi-box{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.kpi-box .k-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.kpi-box .k-val{font-size:26px;font-weight:700;color:var(--txt);line-height:1;}
+.kpi-box .k-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+.kpi-box.k-accent{border-top:3px solid var(--sp);}
+.kpi-box.k-green{border-top:3px solid var(--green);}
+.kpi-box.k-orange{border-top:3px solid var(--orange);}
+.kpi-box.k-red{border-top:3px solid var(--red);}
+.kpi-box.k-blue{border-top:3px solid var(--blue);}
+.card{background:var(--white);border:1px solid var(--border);border-radius:10px;margin-bottom:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:#fafafa;}
+.card-step{width:22px;height:22px;background:var(--sp);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.card-title{font-size:13px;font-weight:700;color:var(--txt);}
+.card-subtitle{font-size:12px;color:var(--muted);margin-left:auto;}
+.card-body{padding:16px 18px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:700px){.two-col{grid-template-columns:1fr;}}
+
+/* ── FORM ELEMENTS ── */
+.field-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px;}
+input[type=text],input[type=time],select,textarea{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:13px;color:var(--txt);outline:none;font-family:inherit;background:var(--white);transition:border-color .15s;}
+input[type=text]:focus,input[type=time]:focus,select:focus,textarea:focus{border-color:var(--sp);box-shadow:0 0 0 3px rgba(238,77,45,.1);}
+textarea{resize:vertical;min-height:90px;}
+.names-hint{font-size:11px;color:var(--muted);margin-top:4px;}
+.entry-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+.entry-row input{flex:1;}
+.entry-row select{width:110px;flex-shrink:0;}
+.rm-btn{width:30px;height:30px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer;color:var(--muted);font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.rm-btn:hover{border-color:var(--red);color:var(--red);background:#fff5f5;}
+.add-entry-btn{display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 12px;border:1px dashed var(--border);border-radius:6px;background:none;cursor:pointer;color:var(--muted);margin-top:6px;transition:all .15s;}
+.add-entry-btn:hover{border-color:var(--sp);color:var(--sp);background:var(--sp-light);}
+
+/* ── FILE UPLOAD ── */
+.file-upload{border:1.5px dashed var(--border);border-radius:10px;padding:20px 16px;text-align:center;cursor:pointer;transition:all .15s;background:#fafafa;}
+.file-upload:hover{border-color:var(--sp);background:var(--sp-light);}
+.file-upload.loaded{border-style:solid;border-color:var(--green);background:#F0FBF4;}
+.file-upload.erro{border-color:var(--red);background:var(--sp-light);}
+.file-upload i{font-size:28px;color:#ccc;display:block;margin-bottom:8px;}
+.file-upload.loaded i{color:var(--green);}
+.file-upload span{font-size:12px;color:var(--muted);}
+.file-upload.loaded span{color:#1B5E20;font-weight:600;}
+
+/* ── TURNO ── */
+.turno-group{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px;}
+.turno-option{flex:1;position:relative;}
+.turno-option input{position:absolute;opacity:0;width:0;height:0;}
+.turno-option label{display:flex;align-items:center;justify-content:center;padding:10px 8px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);background:var(--white);border-right:1px solid var(--border);transition:all .15s;}
+.turno-option:last-child label{border-right:none;}
+.turno-option input:checked+label{background:var(--sp);color:#fff;}
+.time-grid{display:grid;grid-template-columns:1fr auto 1fr 1fr auto 1fr;gap:8px;align-items:end;}
+.time-div{display:flex;align-items:flex-end;padding-bottom:9px;color:var(--border);font-size:20px;justify-content:center;}
+
+/* ── BUTTONS ── */
+.btn-primary{width:100%;padding:11px;font-size:14px;font-weight:700;background:var(--sp);border:none;border-radius:8px;cursor:pointer;color:#fff;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 6px rgba(238,77,45,.3);}
+.btn-primary:hover{background:var(--sp-dark);box-shadow:0 3px 10px rgba(238,77,45,.4);}
+.btn-primary:disabled{background:#ccc;cursor:not-allowed;box-shadow:none;}
+.btn-outline{width:100%;padding:10px;font-size:13px;font-weight:600;background:var(--white);border:1.5px solid var(--sp);border-radius:8px;cursor:pointer;color:var(--sp);margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;}
+.btn-outline:hover{background:var(--sp-light);}
+.btn-outline:disabled{border-color:#ccc;color:#ccc;cursor:not-allowed;}
+
+/* ── RULE INFO ── */
+.rule-info{background:var(--sp-light);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--sp-dark);margin-top:12px;line-height:1.8;border-left:3px solid var(--sp);}
+.rule-info b{font-weight:700;}
+.info-msg{font-size:11px;color:var(--muted);text-align:center;padding:6px;margin-top:6px;}
+
+/* ── RESULTS ── */
+.results-banners{}
+.rodizio-banner{background:#FFF8E1;border-bottom:1px solid #FFE082;padding:10px 18px;font-size:12px;color:#E65100;display:flex;align-items:center;gap:8px;}
+.pen-banner{background:#FFEBEE;border-bottom:1px solid #FFCDD2;padding:10px 18px;font-size:12px;color:#B71C1C;display:flex;align-items:center;gap:8px;}
+.results-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px;padding:16px 18px;background:var(--bg);border-bottom:1px solid var(--border);}
+.stat-box{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.stat-box .num{font-size:22px;font-weight:700;color:var(--txt);}
+.stat-box .lbl{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.01em;}
+
+/* ── TABS ── */
+.tabs-bar{display:flex;border-bottom:2px solid var(--border);background:var(--white);padding:0 18px;overflow-x:auto;}
+.sp-tab{padding:12px 14px;font-size:13px;font-weight:600;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;color:var(--muted);white-space:nowrap;transition:all .15s;display:flex;align-items:center;gap:6px;}
+.sp-tab:hover{color:var(--sp);}
+.sp-tab.active{border-bottom-color:var(--sp);color:var(--sp);}
+.tab-body{display:none;padding:16px 18px;}
+.tab-body.active{display:block;}
+
+/* ── TABLE ── */
+.search-box{width:100%;padding:8px 12px 8px 36px;border:1px solid var(--border);border-radius:7px;font-size:13px;outline:none;background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 10px center;margin-bottom:12px;}
+.search-box:focus{border-color:var(--sp);background-color:var(--white);}
+.table-wrap{overflow-x:auto;}
+.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+.data-table th{font-size:10px;font-weight:700;color:var(--muted);text-align:left;padding:9px 10px;border-bottom:2px solid var(--border);white-space:nowrap;text-transform:uppercase;letter-spacing:.06em;background:#f8f8f8;}
+.data-table td{padding:9px 10px;border-bottom:1px solid #f0f0f0;color:var(--txt);vertical-align:middle;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tr:hover td{background:var(--sp-light);}
+.err-row td{background:#fff5f5!important;}
+.sub-row td{background:#fffde7!important;}
+.no-data{padding:40px;text-align:center;color:var(--muted);}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap;}
+.bsp-am{background:#FFF3E0;color:#E65100;}
+.bsp-sd{background:#E3F2FD;color:#0D47A1;}
+.bsp-both{background:#E8F5E9;color:#1B5E20;}
+.bsp-plotado{background:#FFF0ED;color:#C43B1F;}
+.bsp-moto{background:#F5F5F5;color:#424242;}
+.bsp-fiorino{background:#EDE7F6;color:#4527A0;}
+.bsp-passeio{background:#E0F2F1;color:#004D40;}
+.bsp-van{background:#FCE4EC;color:#880E4F;}
+.bsp-ok{background:#E8F5E9;color:#1B5E20;}
+.bsp-sub{background:#FFF8E1;color:#FF6F00;}
+.bsp-vol{background:#E3F2FD;color:#0D47A1;}
+.bsp-novo{background:#F3E5F5;color:#4A148C;}
+.bsp-err{background:#FFEBEE;color:#B71C1C;}
+/* aliases para compatibilidade */
+.b-err{background:#FFEBEE;color:#B71C1C;}
+.b-sub{background:#FFF8E1;color:#FF6F00;}
+.b-am{background:#FFF3E0;color:#E65100;}
+
+/* ── KPI / DASHBOARD ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+.kpi-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+.kpi-card .knum,.kpi-card .k-val{font-size:26px;font-weight:700;}
+.kpi-card .klbl,.kpi-card .k-label{font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:.01em;display:block;}
+.kpi-card .ksub,.kpi-card .k-sub{font-size:11px;color:var(--muted);margin-top:2px;display:block;}
+.kpi-num{font-size:26px;font-weight:700;}
+.kpi-label{font-size:11px;color:var(--muted);margin-top:6px;display:block;}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:2px;display:block;}
+.section-sub{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:1.2rem 0 .7rem;}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.bar-label{width:160px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;}
+.bar-track{flex:1;background:var(--border);border-radius:99px;height:14px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:99px;transition:width .4s ease;}
+.bar-val{width:40px;text-align:right;font-size:13px;font-weight:700;flex-shrink:0;}
+.risk-alto td{background:#fff5f5;}
+.risk-medio td{background:#fffde7;}
+.disp-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;width:fit-content;margin-bottom:16px;}
+.disp-toggle button{padding:7px 18px;font-size:13px;font-weight:600;background:var(--white);border:none;border-right:1px solid var(--border);cursor:pointer;color:var(--muted);transition:all .15s;}
+.disp-toggle button:last-child{border-right:none;}
+.disp-toggle button.active{background:var(--sp);color:#fff;}
+.modal-section{margin-bottom:1.5rem;}
+.modal-header{display:flex;align-items:center;gap:10px;margin-bottom:.75rem;}
+.modal-title{font-size:14px;font-weight:700;}
+.ns-search{width:100%;padding:8px 12px 8px 36px;border:1px solid var(--border);border-radius:7px;font-size:13px;outline:none;background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 10px center;margin-bottom:10px;}
+/* debug */
+#debug-output{display:none;margin-top:10px;background:#1a1a2e;color:#00ff88;font-family:monospace;font-size:12px;padding:14px;border-radius:10px;white-space:pre-wrap;max-height:300px;overflow-y:auto;}
 </style>
 </head>
 <body>
 
+<!-- LOGIN SCREEN -->
+<div id="login-screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;width:100%;background:#f5f5f5;position:fixed;top:0;left:0;z-index:9999;">
+  <div style="background:#fff;border-radius:12px;border:1px solid #e0e0e0;padding:40px;width:100%;max-width:400px;box-shadow:0 4px 24px rgba(0,0,0,.08);">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="width:52px;height:52px;background:var(--sp);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+        <span style="font-size:24px;font-weight:800;color:#fff">S</span>
+      </div>
+      <h1 style="font-size:18px;font-weight:700;color:#1a1a1a">Escala Shopee</h1>
+      <p style="font-size:13px;color:#888;margin-top:4px">Last Mile Operations</p>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px">Hub</label>
+      <select id="login-hub" style="width:100%;padding:10px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;color:#1a1a1a;outline:none;background:#fff;">
+        <option value="">Selecione seu hub...</option>
+        <option value="PR-TOLEDO">LM Hub_PR_Toledo</option>
+        <option value="PR-PINHAIS">LM Hub_PR_Pinhais</option>
+        <option value="PR-MARINGA-PARQUE-IN">LM Hub_PR_Maringa_Parque Indus</option>
+        <option value="PR-CASCAVEL">LM Hub_PR_Cascavel</option>
+        <option value="PR-LONDRINA-PARQUE-A">LM Hub_PR_Londrina_Parque ABC II</option>
+        <option value="RS-TRAMANDAI">LM Hub_RS_Tramandai</option>
+        <option value="PR-MARINGA">LM Hub_PR_Maringá</option>
+        <option value="PR-GUARAPUAVA">LM Hub_PR_Guarapuava</option>
+        <option value="PR-PONTA-GROSSA">LM Hub_PR_Ponta Grossa</option>
+        <option value="PR-FOZ-DO-IGUACU">LM Hub_PR_Foz do Iguaçu</option>
+        <option value="PR-CAMPO-MOURAO">LM Hub_PR_Campo Mourao</option>
+        <option value="PR-UMUARAMA">LM Hub_PR_Umuarama</option>
+        <option value="PR-PARANAGUA">LM Hub_PR_Paranagua</option>
+        <option value="PR-CURITIBA">LM Hub_PR_Curitiba</option>
+        <option value="PR-PATO-BRANCO">LM Hub_PR_Pato Branco</option>
+        <option value="PR-SAO-JOSE-DOS-PINH">LM Hub_PR_Sao Jose Dos Pinhais</option>
+      </select>
+    </div>
+    <div style="margin-bottom:24px;">
+      <label style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px">Senha</label>
+      <input type="password" id="login-senha" placeholder="Digite a senha do hub..." 
+        style="width:100%;padding:10px 12px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;outline:none;"
+        onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    <div id="login-erro" style="display:none;background:#ffebee;color:#c62828;padding:10px 12px;border-radius:6px;font-size:13px;margin-bottom:16px;"></div>
+    <button onclick="doLogin()" style="width:100%;padding:12px;background:var(--sp);border:none;border-radius:8px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;">
+      Entrar
+    </button>
+  </div>
+</div>
+
 <!-- SIDEBAR -->
-<div class="sidebar">
+<aside class="sidebar" style="display:none">
   <div class="sidebar-logo">
-    <div class="brand">Shopee Logistics / Last Mile</div>
-    <div class="title">Gestão de Escala</div>
-    <div class="subtitle">Last Mile Operations</div>
+    <div class="s-icon"><span>S</span></div>
+    <h1>Gestão de Escala</h1>
+    <p>Last Mile Operations</p>
   </div>
-  <div class="sidebar-hub">
-    <div class="hub-name" id="sidebarHubName">–</div>
-    <div class="hub-date" id="sidebarDate"></div>
-  </div>
-  <div class="nav-section">OPERAÇÃO</div>
-  <div class="nav-item active" onclick="goPage('dashboard')"><span class="nav-icon">📊</span><span>Dashboard</span></div>
-  <div class="nav-item" onclick="goPage('montarEscala')"><span class="nav-icon">📋</span><span>Montar Escala</span></div>
-  <div class="nav-item" onclick="goPage('noshowKpi')"><span class="nav-icon">⚠️</span><span>No-Show KPI</span></div>
-  <div class="nav-item" onclick="goPage('disponibilidade')"><span class="nav-icon">👥</span><span>Disponibilidade</span></div>
-  <div class="nav-item" onclick="goPage('rodizio')"><span class="nav-icon">🔄</span><span>Rodízio</span></div>
-  <div class="nav-section">GESTÃO</div>
-  <div class="nav-item" onclick="goPage('reversaoNoShow')"><span class="nav-icon">↩️</span><span>Reversão / No-Show</span></div>
-  <div class="nav-item" onclick="goPage('historico')"><span class="nav-icon">📁</span><span>Histórico de Escalas</span></div>
-  <div class="nav-item" onclick="goPage('relatorio')"><span class="nav-icon">📈</span><span>Relatório Mensal</span></div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Operação</div>
+    <div class="nav-item" onclick="showPage('dashboard')"><i class="ti ti-dashboard"></i> Dashboard</div>
+    <div class="nav-item active" onclick="showPage('escala')"><i class="ti ti-calendar-event"></i> Montar Escala</div>
+    <div class="nav-item" onclick="showPage('noshow')"><i class="ti ti-alert-triangle"></i> No-Show KPI</div>
+    <div class="nav-item" onclick="showPage('disponibilidade')"><i class="ti ti-users"></i> Disponibilidade</div>
+    <div class="nav-item" onclick="showPage('rodizio')"><i class="ti ti-refresh"></i> Rodízio</div>
+    <div class="nav-item" onclick="showPage('reversao')"><i class="ti ti-arrow-back-up"></i> Reversão / No-Show</div>
+    <div class="nav-item" onclick="showPage('historico')"><i class="ti ti-history"></i> Histórico de Escalas</div>
+    <div class="nav-item" onclick="showPage('relatorio')"><i class="ti ti-chart-bar"></i> Relatório Mensal</div>
+  </nav>
+  <div style="padding:8px 16px;border-top:1px solid rgba(255,255,255,.1)">
+  <button onclick="doLogout()" style="width:100%;padding:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+    <i class="ti ti-logout"></i> Sair
+  </button>
 </div>
-
-<!-- MAIN -->
-<div class="main">
-
-<!-- DASHBOARD -->
-<div id="page-dashboard" class="page active">
-  <div class="page-header">
-    <h1>Dashboard</h1>
-    <p>Visão geral da operação do dia</p>
+<div class="sidebar-footer">
+    <b>Shopee Logistics</b>
+    Last Mile Hub
   </div>
-  <div class="cards-grid" id="dashCards">
-    <div class="card"><div class="card-value" id="dash-rotas">–</div><div class="card-label">Rotas Planejadas</div><div class="card-sub">Hoje</div></div>
-    <div class="card"><div class="card-value" id="dash-drivers">–</div><div class="card-label">Drivers Disponíveis</div><div class="card-sub">Base de disponibilidade</div></div>
-    <div class="card"><div class="card-value" id="dash-alocados">–</div><div class="card-label">Drivers Alocados</div><div class="card-sub">Na escala atual</div></div>
-    <div class="card"><div class="card-value" id="dash-pendentes">–</div><div class="card-label">Rotas Pendentes</div><div class="card-sub">Sem driver</div></div>
-  </div>
-  <div class="table-wrap">
-    <div class="table-header"><h3>Resumo da Escala</h3><button class="btn btn-primary btn-sm" onclick="goPage('montarEscala')">+ Montar Escala</button></div>
-    <div id="dashSummary" style="padding:20px;color:var(--text-light);font-size:13px">Carregue os arquivos na página "Montar Escala" para ver o resumo.</div>
-  </div>
-</div>
+</aside>
 
-<!-- MONTAR ESCALA -->
-<div id="page-montarEscala" class="page">
-  <div class="page-header">
-    <h1>Montar Escala</h1>
-    <p>Importe disponibilidade e roteirização para gerar a escala do dia</p>
-  </div>
-
-  <!-- STEPS -->
-  <div class="steps">
-    <div class="step active" id="step1">
-      <div class="step-num">1</div><span>Upload Arquivos</span>
+<!-- MAIN WRAPPER -->
+<div class="main-wrap" style="display:none">
+  <div class="topbar">
+    <div>
+      <div class="breadcrumb">Shopee Logistics / Last Mile</div>
+      <h2 id="page-title">Montar Escala</h2>
     </div>
-    <div class="step-sep"></div>
-    <div class="step" id="step2">
-      <div class="step-num">2</div><span>Plotados</span>
-    </div>
-    <div class="step-sep"></div>
-    <div class="step" id="step3">
-      <div class="step-num">3</div><span>Turno e horários</span>
-    </div>
-    <div class="step-sep"></div>
-    <div class="step" id="step4">
-      <div class="step-num">4</div><span>Gerar Escala</span>
+    <div class="topbar-right">
+      <span id="topbar-status" class="status-badge" style="display:none"></span>
+      <span style="font-size:12px;color:var(--muted);background:var(--sp-light);color:var(--sp-dark);padding:3px 10px;border-radius:99px;font-weight:500" id="topbar-hub"></span>
+      <span style="font-size:12px;color:var(--muted)" id="topbar-date"></span>
     </div>
   </div>
 
-  <!-- STEP 1 - UPLOAD -->
-  <div id="stepContent1">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
-      <div>
-        <h3 style="margin-bottom:12px;font-size:14px;font-weight:700">📊 Arquivo de Disponibilidade</h3>
-        <div class="upload-area" id="uploadDisp" onclick="document.getElementById('fileDisp').click()">
-          <div class="upload-icon">📁</div>
-          <div class="upload-title" id="titleDisp">work_preference_result_*.xlsx</div>
-          <div class="upload-sub">Clique ou arraste o arquivo aqui</div>
-        </div>
-        <input type="file" id="fileDisp" accept=".xlsx,.xls" style="display:none" onchange="loadDisponibilidade(this)">
-      </div>
-      <div>
-        <h3 style="margin-bottom:12px;font-size:14px;font-weight:700">🗺️ Arquivo de Roteirização</h3>
-        <div class="upload-area" id="uploadRot" onclick="document.getElementById('fileRot').click()">
-          <div class="upload-icon">📁</div>
-          <div class="upload-title" id="titleRot">Planejamento_LPR-24_*.csv</div>
-          <div class="upload-sub">Clique ou arraste o arquivo aqui</div>
-        </div>
-        <input type="file" id="fileRot" accept=".csv" style="display:none" onchange="loadRoteirizacao(this)">
-      </div>
-    </div>
-    <div id="step1Status" style="display:none"></div>
-    <div style="margin-top:16px">
-      <button class="btn btn-primary" onclick="nextStep(2)" id="btnStep1Next" disabled>Próximo →</button>
-    </div>
-  </div>
+  <div class="main-content">
 
-  <!-- STEP 2 - PLOTADOS/PENALIZADOS -->
-  <div id="stepContent2" style="display:none">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
-      <div>
-        <h3 style="font-size:14px;font-weight:700;margin-bottom:8px">✅ Plotados</h3>
-        <p style="font-size:12px;color:var(--text-light);margin-bottom:8px">COLAR LISTA EM MASSA (UM NOME POR LINHA)</p>
-        <textarea id="txtPlotados" rows="8" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;resize:vertical" placeholder="Nome exatamente como na disponibilidade"></textarea>
-        <div style="margin-top:8px;display:flex;gap:8px">
-          <button class="btn btn-sm btn-secondary" onclick="openAddModal('plotado')">+ Adicionar com modal</button>
-          <button class="btn btn-sm btn-success" onclick="savePlotados()">💾 Salvar no hub</button>
-        </div>
-      </div>
-      <div>
-        <h3 style="font-size:14px;font-weight:700;margin-bottom:8px;color:var(--red)">🚫 Penalizados</h3>
-        <p style="font-size:12px;color:var(--text-light);margin-bottom:8px">COLAR LISTA EM MASSA (UM NOME POR LINHA)</p>
-        <textarea id="txtPenalizados" rows="8" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;resize:vertical" placeholder="Drivers bloqueados mesmo se disponíveis"></textarea>
-        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-sm btn-secondary" onclick="openAddModal('penalizado')">+ Adicionar penalizado</button>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:12px;font-weight:600;color:var(--red)">🚫 BLOQUEAR NS ACIMA DE:</span>
-            <input type="number" id="nsBlock" value="0" min="0" max="20" style="width:60px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:13px;text-align:center">
-            <span style="font-size:11px;color:var(--text-light)">(0 = desativado)</span>
+    <!-- ═══════════════ PAGE: ESCALA ═══════════════ -->
+    <div id="page-escala">
+      <div class="page-title">Configuração da escala</div>
+
+      <!-- FILES -->
+      <div class="card">
+        <div class="card-header"><div class="card-step">1</div><span class="card-title">Importar arquivos</span></div>
+        <div class="card-body">
+          <div class="two-col" style="margin-bottom:0">
+            <div>
+              <label class="field-label">Disponibilidade (.xlsx)</label>
+              <div class="file-upload" id="disp-btn" onclick="document.getElementById('disp-in').click()">
+                <i class="ti ti-file-spreadsheet"></i>
+                <span>Clique para importar disponibilidade</span>
+              </div>
+              <input type="file" id="disp-in" accept=".xlsx,.csv" style="display:none" onchange="loadDisp(this)">
+            </div>
+            <div>
+              <label class="field-label">Roteirização do dia (.csv)</label>
+              <div class="file-upload" id="esc-btn" onclick="document.getElementById('esc-in').click()">
+                <i class="ti ti-route"></i>
+                <span>Clique para importar roteirização</span>
+              </div>
+              <input type="file" id="esc-in" accept=".csv" style="display:none" onchange="loadEscala(this)">
+            </div>
           </div>
-          <button class="btn btn-sm btn-success" onclick="savePenalizados()">💾 Salvar no hub</button>
+          <div class="rule-info" style="margin-top:14px">
+            <b>Regras de volume:</b> &gt;800L → <b>Fiorino</b> &nbsp;|&nbsp; &gt;1800L → <b>Van</b> (se indisponível → Fiorino) &nbsp;|&nbsp; Van/Passeio sem disponível → <b>Fiorino</b>
+          </div>
+          <div class="info-msg" id="pre-info"></div>
+        </div>
+      </div>
+
+      <!-- PLOTADOS + PENALIZADOS -->
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><div class="card-step">2</div><span class="card-title">Plotados</span><span class="card-subtitle">Prioridade máxima (não-Moto)</span></div>
+          <div class="card-body">
+            <label class="field-label">Colar lista em massa (um nome por linha)</label>
+            <textarea id="bulk-plotados" placeholder="NOME DRIVER 1&#10;NOME DRIVER 2&#10;NOME DRIVER 3&#10;..."></textarea>
+            <div class="names-hint">Nomes exatamente como na disponibilidade</div>
+            <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:12px;">
+              <label class="field-label">Adicionar individualmente com modal</label>
+              <div id="plotados-area"></div>
+              <button class="add-entry-btn" onclick="addPlt()"><i class="ti ti-plus"></i> Adicionar com modal</button>
+      <button class="add-entry-btn" onclick="savePlotadosToHub()" style="color:var(--green);border-color:var(--green);margin-top:8px"><i class="ti ti-cloud-upload"></i> Salvar no hub</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-step" style="background:#B71C1C">🚫</div><span class="card-title">Penalizados</span><span class="card-subtitle">Não serão escalados</span></div>
+          <div class="card-body">
+            <label class="field-label">Colar lista em massa (um nome por linha)</label>
+            <textarea id="bulk-penalizados" placeholder="NOME DRIVER 1&#10;NOME DRIVER 2&#10;..."></textarea>
+            <div class="names-hint">Drivers bloqueados mesmo se disponíveis</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--border);">
+              <i class="ti ti-ban" style="color:var(--red);font-size:16px"></i>
+              <label class="field-label" style="margin:0;white-space:nowrap">Bloquear NS acima de:</label>
+              <input type="number" id="ns-threshold" value="0" min="0" max="20" style="width:70px;padding:6px 8px;font-size:13px">
+              <span style="font-size:12px;color:var(--muted)">(0 = desativado)</span>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:12px;">
+              <label class="field-label">Adicionar individualmente</label>
+              <div id="penais-area"></div>
+              <button class="add-entry-btn" onclick="addPenal()"><i class="ti ti-plus"></i> Adicionar penalizado</button>
+      <button class="add-entry-btn" onclick="savePenalizadosToHub()" style="color:var(--green);border-color:var(--green);margin-top:8px"><i class="ti ti-cloud-upload"></i> Salvar no hub</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TURNO -->
+      <div class="card">
+        <div class="card-header"><div class="card-step">3</div><span class="card-title">Turno e horários</span></div>
+        <div class="card-body">
+          <div class="turno-group">
+            <div class="turno-option"><input type="radio" name="turno" value="AM" id="t-am"><label for="t-am"><i class="ti ti-sun" style="font-size:14px"></i>&nbsp;AM</label></div>
+            <div class="turno-option"><input type="radio" name="turno" value="SD" id="t-sd"><label for="t-sd"><i class="ti ti-moon" style="font-size:14px"></i>&nbsp;SD</label></div>
+            <div class="turno-option"><input type="radio" name="turno" value="AMBOS" id="t-ambos" checked><label for="t-ambos"><i class="ti ti-clock" style="font-size:14px"></i>&nbsp;Ambos</label></div>
+          </div>
+          <div class="time-grid">
+            <div><label class="field-label">Início AM</label><input type="time" id="am-start" value="04:45"></div>
+            <div class="time-div">–</div>
+            <div><label class="field-label">Fim AM</label><input type="time" id="am-end" value="08:00"></div>
+            <div><label class="field-label">Início SD</label><input type="time" id="sd-start" value="12:00"></div>
+            <div class="time-div">–</div>
+            <div><label class="field-label">Fim SD</label><input type="time" id="sd-end" value="15:15"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="run-btn" onclick="runEscala()" disabled><i class="ti ti-player-play"></i> Gerar sugestão de escala</button>
+      <button class="btn-outline" id="debug-btn" onclick="debugDisp()" style="margin-top:8px;border-color:#2E7CF6;color:#2E7CF6">
+        <i class="ti ti-bug"></i> Debug disponibilidade
+      </button>
+      <div id="debug-output" style="display:none;margin-top:10px;background:#1a1a2e;color:#00ff88;font-family:monospace;font-size:12px;padding:14px;border-radius:8px;white-space:pre-wrap;max-height:300px;overflow-y:auto;"></div>
+      <button class="btn-outline" id="export-btn" onclick="exportarTudo()" disabled><i class="ti ti-file-spreadsheet"></i> Exportar tudo para Excel (.xlsx)</button>
+
+      <!-- RESULTS -->
+      <div class="results card" id="results" style="display:none;margin-top:16px;">
+        <div id="rodizio-box" class="rodizio-banner" style="display:none"><i class="ti ti-refresh"></i></div>
+        <div id="penalizados-aviso" class="pen-banner" style="display:none"></div>
+        <div class="results-stats" id="stats-grid"></div>
+        <div class="tabs-bar">
+          <button class="sp-tab active" onclick="switchTab('t-escala',this)"><i class="ti ti-list"></i> Escala sugerida</button>
+          <button class="sp-tab" onclick="switchTab('t-livres',this)"><i class="ti ti-users"></i> Disponíveis livres</button>
+          <button class="sp-tab" onclick="switchTab('t-alertas',this)"><i class="ti ti-alert-circle"></i> Alertas</button>
+          <button class="sp-tab" onclick="switchTab('t-driver-day',this)"><i class="ti ti-map-pin-exclamation"></i> Driver Day</button>
+          <button class="sp-tab" onclick="switchTab('t-relatorio',this)"><i class="ti ti-report-analytics"></i> Relatório</button>
+        </div>
+        <div class="tab-body active" id="t-escala">
+          <input type="search" class="search-box" id="search-escala" placeholder="Buscar motorista, rota, cluster..." oninput="filterEscala()">
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Turno</th><th>Rota</th><th>Gaiola</th><th>AT</th><th>Cluster</th><th>Volume</th><th>G/GG</th><th>Modal pedido</th><th>Motorista sugerido</th><th>ID Driver</th><th>Modal alocado</th><th>Status</th></tr></thead>
+            <tbody id="tbody-escala"></tbody>
+          </table></div>
+        </div>
+        <div class="tab-body" id="t-livres">
+          <input type="search" class="search-box" id="search-livres" placeholder="Buscar motorista, cluster, modal..." oninput="filterLivres()">
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>ID Driver</th><th>Motorista</th><th>Modal</th><th>Turno disp.</th><th>Clusters</th><th>Rodízio (3d)</th></tr></thead>
+            <tbody id="tbody-livres"></tbody>
+          </table></div>
+        </div>
+        <div class="tab-body" id="t-alertas">
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Rota</th><th>Cluster</th><th>Modal pedido</th><th>Alerta</th></tr></thead>
+            <tbody id="tbody-alertas"></tbody>
+          </table></div>
+        </div>
+        <div class="tab-body" id="t-relatorio">
+          <div id="relatorio-content"><div class="no-data">Gere a escala para ver o relatório</div></div>
+        </div>
+        <div class="tab-body" id="t-driver-day">
+          <div style="background:#FFF8E1;border:1px solid #FFE082;border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:#E65100;display:flex;align-items:center;gap:8px;">
+            <i class="ti ti-map-pin-exclamation" style="font-size:18px"></i>
+            <div><b>Observação Driver Day</b> — Regiões abaixo não tiveram motoristas disponíveis. Considere realizar Driver Day nestas regiões com o modal indicado.</div>
+          </div>
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Cluster / Região</th><th>Modal necessário</th><th>Rotas sem atendimento</th><th>Observação</th></tr></thead>
+            <tbody id="tbody-driver-day"></tbody>
+          </table></div>
         </div>
       </div>
     </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-secondary" onclick="nextStep(1)">← Voltar</button>
-      <button class="btn btn-primary" onclick="nextStep(3)">Próximo →</button>
-    </div>
-  </div>
 
-  <!-- STEP 3 - TURNO -->
-  <div id="stepContent3" style="display:none">
-    <div class="turno-select">
-      <button class="turno-btn active" id="btnAM" onclick="selectTurno('AM')">☀️ AM</button>
-      <button class="turno-btn" id="btnSD" onclick="selectTurno('SD')">🌙 SD</button>
-      <button class="turno-btn" id="btnAmbos" onclick="selectTurno('Ambos')">🕐 Ambos</button>
+    <!-- ═══════════════ PAGE: NO-SHOW ═══════════════ -->
+    <div id="page-noshow" style="display:none">
+      <div class="page-title">KPI de No-Show — Ofensores</div>
+      <div id="noshow-content"><div class="no-data">Importe a disponibilidade para ver os dados</div></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:20px">
-      <div class="form-group">
-        <label>INÍCIO AM</label>
-        <input type="time" id="inicioAM" value="04:45">
-      </div>
-      <div class="form-group">
-        <label>FIM AM</label>
-        <input type="time" id="fimAM" value="08:00">
-      </div>
-      <div class="form-group">
-        <label>INÍCIO SD</label>
-        <input type="time" id="inicioSD" value="12:00">
-      </div>
-      <div class="form-group">
-        <label>FIM SD</label>
-        <input type="time" id="fimSD" value="15:15">
-      </div>
-    </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-secondary" onclick="nextStep(2)">← Voltar</button>
-      <button class="btn btn-primary" onclick="nextStep(4)">Próximo →</button>
-    </div>
-  </div>
 
-  <!-- STEP 4 - GERAR ESCALA -->
-  <div id="stepContent4" style="display:none">
-    <div class="alert alert-info">Revise as configurações antes de gerar. A escala será salva automaticamente no histórico.</div>
-    <div id="step4Preview" style="margin-bottom:20px"></div>
-    <div style="display:flex;gap:8px;margin-bottom:24px">
-      <button class="btn btn-secondary" onclick="nextStep(3)">← Voltar</button>
-      <button class="btn btn-primary" id="btnGerar" onclick="gerarEscala()">⚡ Gerar Escala</button>
+    <!-- ═══════════════ PAGE: DISPONIBILIDADE ═══════════════ -->
+    <div id="page-disponibilidade" style="display:none">
+      <div class="page-title">Disponibilidade por modal e turno</div>
+      <div id="disp-content"><div class="no-data">Importe a disponibilidade para ver os dados</div></div>
     </div>
-    <div id="escalaResultado" style="display:none"></div>
-  </div>
-</div>
 
-<!-- DISPONIBILIDADE -->
-<div id="page-disponibilidade" class="page">
-  <div class="page-header">
-    <h1>Disponibilidade</h1>
-    <p>Consulta de disponibilidade de drivers</p>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>Turno</label>
-      <select id="filtroTurnoDisp" onchange="renderDisponibilidade()">
-        <option value="">Todos</option>
-        <option value="AM">AM</option>
-        <option value="SD">SD</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Modal</label>
-      <select id="filtroModal" onchange="renderDisponibilidade()">
-        <option value="">Todos</option>
-        <option value="PASSEIO">PASSEIO</option>
-        <option value="FIORINO">FIORINO</option>
-        <option value="MOTO">MOTO</option>
-        <option value="VAN">VAN</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Buscar driver</label>
-      <input type="text" id="buscaDriver" placeholder="Nome..." oninput="renderDisponibilidade()">
-    </div>
-    <div class="form-group">
-      <label>Cluster</label>
-      <select id="filtroCluster" onchange="renderDisponibilidade()">
-        <option value="">Todos</option>
-      </select>
-    </div>
-  </div>
-  <div class="table-wrap">
-    <div class="table-header">
-      <h3 id="dispCount">Drivers disponíveis</h3>
-    </div>
-    <div style="overflow-x:auto">
-      <table id="tabelaDisp">
-        <thead><tr><th>Driver</th><th>ID</th><th>Modal</th><th>Turno</th><th>No Show</th><th>Clusters</th></tr></thead>
-        <tbody id="tbodyDisp"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
+    <!-- ═══════════════ PAGE: REVERSAO ═══════════════ -->
+    <div id="page-reversao" style="display:none">
+      <div class="page-title">Reversão / No-Show</div>
 
-<!-- RODIZIO -->
-<div id="page-rodizio" class="page">
-  <div class="page-header">
-    <h1>Rodízio</h1>
-    <p>Gestão de rodízio de clusters por driver</p>
-  </div>
-  <div class="alert alert-info">Rodízio assegura que todos os drivers tenham chance de rodar em diferentes clusters ao longo do tempo.</div>
-  <div class="rodizio-grid" id="rodizioGrid">
-    <div style="color:var(--text-light);padding:20px;font-size:13px">Carregue a disponibilidade para ver o rodízio.</div>
-  </div>
-</div>
-
-<!-- NO-SHOW KPI -->
-<div id="page-noshowKpi" class="page">
-  <div class="page-header">
-    <h1>No-Show KPI</h1>
-    <p>Ranking de drivers com histórico de no-show</p>
-  </div>
-  <div class="cards-grid">
-    <div class="card"><div class="card-value" id="kpi-zero" style="color:var(--green)">–</div><div class="card-label">NS = 0</div><div class="card-sub">Sem histórico</div></div>
-    <div class="card"><div class="card-value" id="kpi-baixo" style="color:var(--yellow)">–</div><div class="card-label">NS 1–2</div><div class="card-sub">Baixo risco</div></div>
-    <div class="card"><div class="card-value" id="kpi-medio" style="color:var(--orange)">–</div><div class="card-label">NS 3–4</div><div class="card-sub">Atenção</div></div>
-    <div class="card"><div class="card-value" id="kpi-alto" style="color:var(--red)">–</div><div class="card-label">NS 5+</div><div class="card-sub">Alto risco</div></div>
-  </div>
-  <div class="table-wrap">
-    <div class="table-header"><h3>Ranking No-Show</h3></div>
-    <div style="overflow-x:auto">
-      <table>
-        <thead><tr><th>#</th><th>Driver</th><th>Modal</th><th>No Show</th><th>Clusters</th></tr></thead>
-        <tbody id="tbodyNS"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- REVERSAO / NO-SHOW -->
-<div id="page-reversaoNoShow" class="page">
-  <div class="page-header">
-    <h1>Reversão / No-Show</h1>
-    <p>Registre no-shows e gerencie substituições</p>
-  </div>
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('tabNoShow',this)">Registrar No-Show</div>
-    <div class="tab" onclick="switchTab('tabSubs',this)">Substituições</div>
-  </div>
-  <div id="tabNoShow" class="tab-content active">
-    <div class="alert alert-warn">Registre os drivers que não compareceram. O no-show será salvo no histórico e afetará o KPI.</div>
-    <div class="form-row">
-      <div class="form-group" style="flex:1">
-        <label>Driver</label>
-        <select id="selNSDriver" style="width:100%">
-          <option value="">Selecione...</option>
-        </select>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-step" style="background:#E65100"><i class="ti ti-alert-triangle" style="font-size:12px"></i></div>
+          <span class="card-title">Rotas com No-Show</span>
+          <span class="card-subtitle">Cole as gaiolas ou ATs — a ferramenta localiza as rotas e aloca novos drivers</span>
+        </div>
+        <div class="card-body">
+          <div style="margin-bottom:14px">
+            <label class="field-label">Gaiolas ou ATs com no-show</label>
+            <textarea id="noshow-input" placeholder="A-1, A-5, B-12&#10;ou&#10;AT2026052152XO1&#10;AT2026052152XO2..." style="min-height:100px"></textarea>
+            <div class="names-hint">Separe por vírgula, ponto-vírgula ou uma por linha</div>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label class="field-label">Turno</label>
+            <div class="turno-group" style="max-width:240px;margin-bottom:0">
+              <div class="turno-option"><input type="radio" name="turno-rev" value="AM" id="rev-am" checked><label for="rev-am"><i class="ti ti-sun" style="font-size:13px"></i>&nbsp;AM</label></div>
+              <div class="turno-option"><input type="radio" name="turno-rev" value="SD" id="rev-sd"><label for="rev-sd"><i class="ti ti-moon" style="font-size:13px"></i>&nbsp;SD</label></div>
+            </div>
+          </div>
+          <button class="btn-primary" style="max-width:280px" onclick="gerarReversao()">
+            <i class="ti ti-search"></i> Buscar rotas e gerar reversão
+          </button>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Motivo</label>
-        <select id="selNSMotivo">
-          <option value="ausencia">Ausência sem justificativa</option>
-          <option value="atraso">Atraso > 30min</option>
-          <option value="outro">Outro</option>
-        </select>
-      </div>
-      <div class="form-group" style="justify-content:flex-end">
-        <button class="btn btn-danger" onclick="registrarNoShow()">Registrar No-Show</button>
+
+      <!-- Resultado -->
+      <div id="reversao-results" style="display:none;margin-top:16px">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-step" style="background:var(--green)"><i class="ti ti-check" style="font-size:11px"></i></div>
+            <span class="card-title">Resultado da Reversão</span>
+            <div style="margin-left:auto;display:flex;gap:8px;">
+              <button class="add-entry-btn" style="color:var(--green);border-color:var(--green)" onclick="salvarNoshow()">
+                <i class="ti ti-cloud-upload"></i> Salvar no hub
+              </button>
+              <button class="add-entry-btn" onclick="exportarReversao()">
+                <i class="ti ti-file-spreadsheet"></i> Exportar Excel
+              </button>
+            </div>
+          </div>
+          <div class="results-stats" id="reversao-stats"></div>
+
+          <!-- TABS -->
+          <div class="tabs-bar">
+            <button class="sp-tab active" onclick="switchRevTab('t-rev-escala',this)">
+              <i class="ti ti-list"></i> Nova Escala
+            </button>
+            <button class="sp-tab" onclick="switchRevTab('t-rev-noshow',this)">
+              <i class="ti ti-ban"></i> No-Show&nbsp;<span id="noshow-count" style="background:#FFEBEE;color:#B71C1C;border-radius:99px;padding:1px 7px;font-size:11px">0</span>
+            </button>
+          </div>
+
+          <!-- TAB: Nova Escala -->
+          <div class="tab-body active" id="t-rev-escala">
+            <div class="table-wrap"><table class="data-table">
+              <thead><tr><th>Turno</th><th>Rota</th><th>Gaiola</th><th>AT</th><th>Cluster</th><th>Volume</th><th>G/GG</th><th>Modal pedido</th><th>Motorista sugerido</th><th>ID Driver</th><th>Modal alocado</th><th>Status</th></tr></thead>
+              <tbody id="tbody-reversao"></tbody>
+            </table></div>
+          </div>
+
+          <!-- TAB: No-Show -->
+          <div class="tab-body" id="t-rev-noshow" style="display:none">
+            <div style="display:flex;justify-content:flex-end;padding:12px 0 0">
+              <button class="add-entry-btn" style="color:var(--red);border-color:#ffcdd2" onclick="limparNoshowHist()">
+                <i class="ti ti-trash"></i> Limpar histórico
+              </button>
+            </div>
+            <div class="table-wrap"><table class="data-table">
+              <thead><tr><th>Driver (no-show)</th><th>Rota</th><th>Gaiola</th><th>AT</th><th>Cluster</th><th>Turno</th><th>Data</th></tr></thead>
+              <tbody id="tbody-noshow-hist"></tbody>
+            </table></div>
+          </div>
+        </div>
       </div>
     </div>
-    <div id="listaNS" style="margin-top:16px"></div>
-  </div>
-  <div id="tabSubs" class="tab-content">
-    <div class="alert alert-info">Drivers disponíveis mas não escalados — use para substituições rápidas.</div>
-    <div id="subsList" style="margin-top:8px"></div>
-  </div>
-</div>
 
-<!-- HISTÓRICO -->
-<div id="page-historico" class="page">
-  <div class="page-header">
-    <h1>Histórico de Escalas</h1>
-    <p>Escalas geradas anteriormente</p>
-  </div>
-  <div id="historicoList">
-    <div style="color:var(--text-light);font-size:13px;padding:20px">Nenhuma escala no histórico ainda.</div>
-  </div>
-</div>
-
-<!-- RELATÓRIO -->
-<div id="page-relatorio" class="page">
-  <div class="page-header">
-    <h1>Relatório Mensal</h1>
-    <p>Indicadores mensais de operação</p>
-  </div>
-  <div class="alert alert-info">Em breve: exportação automática de relatórios mensais.</div>
-</div>
-
-</div><!-- /main -->
-
-<!-- MODAL ADD DRIVER -->
-<div class="modal-overlay" id="modalAdd">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="modalAddTitle">Adicionar Driver</h3>
-      <button class="modal-close" onclick="closeModal('modalAdd')">×</button>
+<!-- ═══════════════ PAGE: DASHBOARD ═══════════════ -->
+    <div id="page-dashboard" style="display:none">
+      <div class="page-title">Dashboard — Resumo do dia</div>
+      <div id="dashboard-content"><div class="no-data">Carregando...</div></div>
     </div>
-    <div class="form-group" style="margin-bottom:16px">
-      <label>Nome do Driver</label>
-      <input type="text" id="modalDriverInput" placeholder="Digite ou selecione..." style="width:100%">
-    </div>
-    <div id="modalSuggestions" style="max-height:200px;overflow-y:auto;margin-bottom:16px"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-secondary" onclick="closeModal('modalAdd')">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmAddDriver()">Adicionar</button>
-    </div>
-  </div>
-</div>
 
+    <!-- ═══════════════ PAGE: HISTORICO ═══════════════ -->
+    <div id="page-historico" style="display:none">
+      <div class="page-title">Histórico de Escalas</div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-step"><i class="ti ti-history" style="font-size:12px"></i></div>
+          <span class="card-title">Buscar escalas por período</span>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+            <div><label class="field-label">Data inicial</label><input type="date" id="hist-data-ini" style="width:160px"></div>
+            <div><label class="field-label">Data final</label><input type="date" id="hist-data-fim" style="width:160px"></div>
+            <div><label class="field-label">Turno</label>
+              <select id="hist-turno" style="width:120px">
+                <option value="">Todos</option>
+                <option value="AM">AM</option>
+                <option value="SD">SD</option>
+                <option value="AMBOS">Ambos</option>
+              </select>
+            </div>
+            <button class="btn-primary" style="max-width:140px;padding:9px" onclick="buscarHistorico()">
+              <i class="ti ti-search"></i> Buscar
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="historico-content" style="margin-top:16px"><div class="no-data">Selecione um período e clique em Buscar</div></div>
+    </div>
+
+    <!-- ═══════════════ PAGE: RELATORIO ═══════════════ -->
+    <div id="page-relatorio" style="display:none">
+      <div class="page-title">Relatório Mensal</div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-step"><i class="ti ti-chart-bar" style="font-size:12px"></i></div>
+          <span class="card-title">Filtrar por mês</span>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+            <div><label class="field-label">Mês/Ano</label><input type="month" id="rel-mes" style="width:180px"></div>
+            <button class="btn-primary" style="max-width:160px;padding:9px" onclick="gerarRelatorio()">
+              <i class="ti ti-report-analytics"></i> Gerar relatório
+            </button>
+            <button class="add-entry-btn" onclick="exportarRelatorio()">
+              <i class="ti ti-file-spreadsheet"></i> Exportar Excel
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="relatorio-content" style="margin-top:16px"><div class="no-data">Selecione o mês e clique em Gerar relatório</div></div>
+    </div>
+
+    <!-- ═══════════════ PAGE: RODIZIO ═══════════════ -->
+    <div id="page-rodizio" style="display:none">
+      <div class="page-title">Histórico de Rodízio</div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-step"><i class="ti ti-refresh" style="font-size:12px"></i></div>
+          <span class="card-title">Drivers que já rodaram</span>
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+            <button class="add-entry-btn" onclick="importarRodizio()"><i class="ti ti-upload"></i> Importar histórico</button>
+            <button class="add-entry-btn" onclick="exportarRodizio()"><i class="ti ti-download"></i> Exportar</button>
+            <button class="add-entry-btn" onclick="clearRodizioHoje()"><i class="ti ti-calendar-x"></i> Limpar hoje</button>
+            <button class="add-entry-btn" style="color:var(--red)" onclick="clearRodizio()"><i class="ti ti-trash"></i> Limpar tudo</button>
+          </div>
+          <input type="file" id="rodizio-import-input" accept=".json" style="display:none" onchange="handleRodizioImport(this)">
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Motorista</th><th>Modal</th><th>Vezes rodou</th><th>Últimas datas</th><th>Turnos</th></tr></thead>
+            <tbody id="tbody-rodizio"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /main-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-// ============================================================
-//  STATE
-// ============================================================
-const STATE = {
-  hub: null,
-  disponibilidade: [],
-  rotas: [],
-  escala: [],         // [{rota, driver, turno}]
-  plotados: [],
-  penalizados: [],
-  noshows: [],
-  turnoSel: 'AM',
-  currentStep: 1,
-  modalMode: null,    // 'plotado' | 'penalizado'
-  historico: []
+
+// ── PAGE NAVIGATION ───────────────────────────────────────────────
+const pages = {
+  'escala':         {el:'page-escala',       title:'Montar Escala'},
+  'noshow':         {el:'page-noshow',       title:'No-Show KPI'},
+  'disponibilidade':{el:'page-disponibilidade',title:'Disponibilidade'},
+  'rodizio':        {el:'page-rodizio',       title:'Histórico de Rodízio'},
+  'reversao':       {el:'page-reversao',      title:'Reversão / No-Show'},
+  'historico':      {el:'page-historico',     title:'Histórico de Escalas'},
+  'relatorio':      {el:'page-relatorio',     title:'Relatório Mensal'},
+  'dashboard':      {el:'page-dashboard',     title:'Dashboard'},
 };
-
-// ============================================================
-//  INIT
-// ============================================================
-document.addEventListener('DOMContentLoaded', () => {
-  const d = new Date();
-  const fmt = d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});
-  document.getElementById('sidebarDate').textContent = fmt;
-  document.getElementById('sidebarHubName').textContent = 'LM Hub_PR_Sao Jose Dos Pinhais';
-  initDragDrop();
-  updateDash();
-});
-
-// ============================================================
-//  NAVIGATION
-// ============================================================
-function goPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + id).classList.add('active');
-  event.currentTarget && event.currentTarget.classList.add('active');
-  // re-render on nav
-  if (id === 'disponibilidade') renderDisponibilidade();
-  if (id === 'noshowKpi') renderNSKpi();
-  if (id === 'rodizio') renderRodizio();
-  if (id === 'historico') renderHistorico();
-  if (id === 'reversaoNoShow') renderReversao();
-}
-
-// ============================================================
-//  DRAG & DROP
-// ============================================================
-function initDragDrop() {
-  ['uploadDisp','uploadRot'].forEach(id => {
-    const el = document.getElementById(id);
-    el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragging'); });
-    el.addEventListener('dragleave', () => el.classList.remove('dragging'));
-    el.addEventListener('drop', e => {
-      e.preventDefault(); el.classList.remove('dragging');
-      const file = e.dataTransfer.files[0];
-      if (!file) return;
-      if (id === 'uploadDisp') processDisponibilidade(file);
-      else processRoteirizacao(file);
-    });
+function showPage(name){
+  Object.values(pages).forEach(p=>{ const el=document.getElementById(p.el); if(el) el.style.display='none'; });
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const pageEl = document.getElementById(pages[name]?.el);
+  if(!pageEl){ console.error('Page not found:', name); return; }
+  pageEl.style.display='block';
+  document.getElementById('page-title').textContent=pages[name].title;
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    if(n.getAttribute('onclick')?.includes(name)) n.classList.add('active');
   });
+  if(name==='noshow') renderNoShow();
+  if(name==='disponibilidade') renderDisponibilidade();
+  if(name==='rodizio') renderRodizio();
+  if(name==='dashboard') renderDashboard();
+  if(name==='reversao') loadNoshowHist();
 }
 
-// ============================================================
-//  LOAD FILES
-// ============================================================
-function loadDisponibilidade(input) { if(input.files[0]) processDisponibilidade(input.files[0]); }
-function loadRoteirizacao(input)    { if(input.files[0]) processRoteirizacao(input.files[0]); }
+// Set topbar date
+const _td=document.getElementById('topbar-date'); if(_td) _td.textContent = new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});
 
-function processDisponibilidade(file) {
-  const reader = new FileReader();
-  reader.onload = e => {
-    const wb = XLSX.read(e.target.result, {type:'array'});
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
-    STATE.disponibilidade = rows.map(r => ({
-      id:        String(r['Driver ID'] || ''),
-      nome:      String(r['Driver Name'] || ''),
-      clusters:  String(r['Cluster'] || ''),
-      modal:     String(r['Vehicle Type'] || '').toUpperCase(),
-      noShow:    parseInt(r['No Show Time'] || 0),
-      horario:   String(r[Object.keys(r).find(k => k.match(/\d{4}-\d{2}-\d{2}/)) || ''] || '')
-    })).filter(d => d.nome);
-    document.getElementById('titleDisp').textContent = `✅ ${STATE.disponibilidade.length} drivers carregados`;
-    document.getElementById('uploadDisp').style.borderColor = 'var(--green)';
-    checkStep1();
-    updateDash();
-    populateClusterFilter();
-    populateNSDrivers();
-  };
-  reader.readAsArrayBuffer(file);
+let dispData=[], escData=[], allRows=[], livresData=[], alertas=[];
+
+// ── RODÍZIO STORAGE ──────────────────────────────────────────────
+function getRodizio(){
+  try{ return JSON.parse(localStorage.getItem('shopee_rodizio')||'[]'); }
+  catch(e){ return []; }
 }
-
-function processRoteirizacao(file) {
-  const reader = new FileReader();
-  reader.onload = e => {
-    Papa.parse(e.target.result, {
-      header: true,
-      skipEmptyLines: true,
-      complete: res => {
-        STATE.rotas = res.data.filter(r => r['Ciclo'] && r['Ciclo'].trim()).map(r => ({
-          rota:    r['Rota'] || '',
-          at:      r['AT / TO'] || '',
-          gaiola:  r['Gaiola'] || '',
-          paradas: r['Parada'] || '',
-          spr:     r['SPR'] || '',
-          cidade:  r['Cidade'] || '',
-          bairro:  r['Bairro'] || '',
-          duracao: r['Duração'] || '',
-          km:      r['KM'] || '',
-          ciclo:   r['Ciclo'] || '',
-          letra:   r['Letra'] || '',
-          tipo:    r['Tipo de veículo'] || '',
-          office:  r['Office'] || '',
-          cluster: r['clusters'] || '',
-          driver:  r['Driver planejado'] || '',
-          carregado: r['Driver carregado'] || ''
-        }));
-        document.getElementById('titleRot').textContent = `✅ ${STATE.rotas.length} rotas carregadas`;
-        document.getElementById('uploadRot').style.borderColor = 'var(--green)';
-        checkStep1();
-        updateDash();
-      }
-    });
-  };
-  reader.readAsText(file, 'UTF-8');
+function saveRodizio(list){
+  try{ localStorage.setItem('shopee_rodizio', JSON.stringify(list)); }catch(e){}
 }
-
-function checkStep1() {
-  const ok = STATE.disponibilidade.length > 0 && STATE.rotas.length > 0;
-  document.getElementById('btnStep1Next').disabled = !ok;
-  if (ok) {
-    const s = document.getElementById('step1Status');
-    s.style.display = 'block';
-    s.innerHTML = `<div class="alert alert-success">✅ Ambos os arquivos carregados. ${STATE.disponibilidade.length} drivers e ${STATE.rotas.length} rotas prontos.</div>`;
-  }
-}
-
-// ============================================================
-//  STEPS
-// ============================================================
-function nextStep(n) {
-  STATE.currentStep = n;
-  for(let i=1;i<=4;i++){
-    document.getElementById('stepContent'+i).style.display = i===n ? 'block' : 'none';
-    const s = document.getElementById('step'+i);
-    s.classList.remove('active','done');
-    if(i < n) s.classList.add('done');
-    else if(i === n) s.classList.add('active');
-  }
-  if(n===4) buildStep4Preview();
-}
-
-function buildStep4Preview() {
-  const turno = STATE.turnoSel;
-  const rotas = turno === 'Ambos' ? STATE.rotas : STATE.rotas.filter(r => r.ciclo === turno);
-  const plotadosLista = STATE.plotados;
-  const penalizadosLista = STATE.penalizados;
-  const nsBlock = parseInt(document.getElementById('nsBlock').value) || 0;
-
-  let html = `<div class="alert alert-info">
-    <strong>Turno:</strong> ${turno} &nbsp;|&nbsp;
-    <strong>Rotas:</strong> ${rotas.length} &nbsp;|&nbsp;
-    <strong>Plotados:</strong> ${plotadosLista.length} &nbsp;|&nbsp;
-    <strong>Penalizados:</strong> ${penalizadosLista.length}
-    ${nsBlock > 0 ? ` &nbsp;|&nbsp; <strong>Bloquear NS ≥ ${nsBlock}</strong>` : ''}
-  </div>`;
-  document.getElementById('step4Preview').innerHTML = html;
-}
-
-// ============================================================
-//  TURNO
-// ============================================================
-function selectTurno(t) {
-  STATE.turnoSel = t;
-  ['AM','SD','Ambos'].forEach(x => {
-    document.getElementById('btn'+x).classList.toggle('active', x===t);
-  });
-}
-
-// ============================================================
-//  PLOTADOS / PENALIZADOS
-// ============================================================
-function savePlotados() {
-  const txt = document.getElementById('txtPlotados').value;
-  STATE.plotados = txt.split('\n').map(s=>s.trim()).filter(Boolean);
-  alert(`✅ ${STATE.plotados.length} plotados salvos.`);
-}
-
-function savePenalizados() {
-  const txt = document.getElementById('txtPenalizados').value;
-  STATE.penalizados = txt.split('\n').map(s=>s.trim()).filter(Boolean);
-  alert(`✅ ${STATE.penalizados.length} penalizados salvos.`);
-}
-
-// ============================================================
-//  MODAL ADD
-// ============================================================
-function openAddModal(mode) {
-  STATE.modalMode = mode;
-  document.getElementById('modalAddTitle').textContent = mode === 'plotado' ? 'Adicionar Plotado' : 'Adicionar Penalizado';
-  document.getElementById('modalDriverInput').value = '';
-  document.getElementById('modalSuggestions').innerHTML = '';
-  document.getElementById('modalAdd').classList.add('open');
-  document.getElementById('modalDriverInput').addEventListener('input', filterModalSugg);
-}
-
-function filterModalSugg() {
-  const q = document.getElementById('modalDriverInput').value.toLowerCase();
-  const div = document.getElementById('modalSuggestions');
-  if(!q){ div.innerHTML=''; return; }
-  const matches = STATE.disponibilidade.filter(d => d.nome.toLowerCase().includes(q)).slice(0,10);
-  div.innerHTML = matches.map(d =>
-    `<div onclick="selectModalDriver('${d.nome.replace(/'/g,"\\'")}',this)" style="padding:8px 12px;cursor:pointer;border-radius:4px;font-size:13px;hover:background:#f5f5f5"
-      onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">${d.nome} <span style="color:var(--text-light);font-size:11px">${d.modal}</span></div>`
-  ).join('');
-}
-
-function selectModalDriver(nome, el) {
-  document.getElementById('modalDriverInput').value = nome;
-  document.getElementById('modalSuggestions').innerHTML = '';
-}
-
-function confirmAddDriver() {
-  const nome = document.getElementById('modalDriverInput').value.trim();
-  if(!nome) return;
-  if(STATE.modalMode === 'plotado') {
-    const cur = document.getElementById('txtPlotados').value.trim();
-    document.getElementById('txtPlotados').value = cur ? cur + '\n' + nome : nome;
-  } else {
-    const cur = document.getElementById('txtPenalizados').value.trim();
-    document.getElementById('txtPenalizados').value = cur ? cur + '\n' + nome : nome;
-  }
-  closeModal('modalAdd');
-}
-
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-// ============================================================
-//  GERAR ESCALA
-// ============================================================
-function gerarEscala() {
-  const btn = document.getElementById('btnGerar');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Gerando...';
-
-  setTimeout(() => {
-    try {
-      const resultado = _gerarEscalaLogica();
-      STATE.escala = resultado.alocados;
-      STATE.historico.unshift({ data: new Date().toISOString(), escala: resultado, turno: STATE.turnoSel });
-      renderEscalaResultado(resultado);
-      updateDash();
-    } catch(err) {
-      alert('Erro ao gerar escala: ' + err.message + '\n\nVerifique o console para mais detalhes.');
-      console.error(err);
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = '⚡ Gerar Escala';
+function addToRodizio(drivers, turno){
+  const list = getRodizio();
+  const today = new Date().toLocaleDateString('pt-BR');
+  drivers.forEach(d=>{
+    if(!list.find(r=>r.name===d.name && r.date===today && r.turno===turno)){
+      list.push({name:d.name, modal:d.modal, turno, date:today});
     }
-  }, 300);
+  });
+  // Keep only last 30 days
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
+  const filtered = list.filter(r=>{
+    const [dd,mm,yyyy] = r.date.split('/');
+    return new Date(`${yyyy}-${mm}-${dd}`) >= cutoff;
+  });
+  saveRodizio(filtered);
 }
 
-function _gerarEscalaLogica() {
-  const turno = STATE.turnoSel;
-  const plotados = STATE.plotados.map(p=>p.toLowerCase().trim());
-  const penalizados = STATE.penalizados.map(p=>p.toLowerCase().trim());
-  const nsBlock = parseInt(document.getElementById('nsBlock').value) || 0;
-
-  // Filtra rotas pelo turno
-  const rotas = turno === 'Ambos'
-    ? STATE.rotas
-    : STATE.rotas.filter(r => r.ciclo === turno || r.ciclo === '');
-
-  // Filtra drivers disponíveis no turno
-  const driversDisp = STATE.disponibilidade.filter(d => {
-    const h = d.horario;
-    if(turno === 'AM') return h.includes('04:45-08:00');
-    if(turno === 'SD') return h.includes('12:00-15:15');
-    return h.includes('04:45-08:00') || h.includes('12:00-15:15');
-  });
-
-  // Remove penalizados e bloqueados por NS
-  const dispFiltrado = driversDisp.filter(d => {
-    const nomeLow = d.nome.toLowerCase().trim();
-    if(penalizados.some(p => nomeLow.includes(p) || p.includes(nomeLow))) return false;
-    if(nsBlock > 0 && d.noShow >= nsBlock) return false;
-    return true;
-  });
-
-  // Prioriza plotados
-  const plotadoDrivers = dispFiltrado.filter(d =>
-    plotados.some(p => d.nome.toLowerCase().trim().includes(p) || p.includes(d.nome.toLowerCase().trim()))
+// Retorna set de nomes (normalizados) que já rodaram HOJE
+// Só bloqueia quem rodou no DIA ATUAL — não bloqueia dias anteriores
+function getEscaladosHoje(){
+  const list = getRodizio();
+  const today = new Date().toLocaleDateString('pt-BR');
+  // Só bloqueia quem tem registro com a data de HOJE
+  return new Set(
+    list
+      .filter(r => r.date === today)
+      .map(r => nrm(r.name))
   );
-  const normalDrivers = dispFiltrado.filter(d =>
-    !plotados.some(p => d.nome.toLowerCase().trim().includes(p) || p.includes(d.nome.toLowerCase().trim()))
-  ).sort((a,b) => a.noShow - b.noShow);
-
-  const fila = [...plotadoDrivers, ...normalDrivers];
-  const usados = new Set();
-  const alocados = [];
-  const semDriver = [];
-
-  rotas.forEach(rota => {
-    // Tenta encontrar driver compatível com o cluster
-    let driver = null;
-    const clusterRota = rota.cluster ? rota.cluster.trim() : '';
-
-    // 1. Plotados com cluster compatível
-    driver = fila.find(d => !usados.has(d.id) && plotados.some(p =>
-      d.nome.toLowerCase().trim().includes(p)) &&
-      (d.clusters === 'ALL' || (clusterRota && d.clusters.includes(clusterRota)))
-    );
-
-    // 2. Qualquer driver com cluster compatível
-    if(!driver && clusterRota) {
-      driver = fila.find(d => !usados.has(d.id) &&
-        (d.clusters === 'ALL' || d.clusters.includes(clusterRota))
-      );
+}
+function clearRodizio(){
+  if(confirm('Limpar todo o histórico de rodízio?')){ saveRodizio([]); renderRodizio(); }
+}
+function clearRodizioHoje(){
+  const today = new Date().toLocaleDateString('pt-BR');
+  const list = getRodizio().filter(r => r.date !== today);
+  saveRodizio(list);
+  renderRodizio();
+  alert('Registros de hoje removidos. Agora pode gerar a escala normalmente.');
+}
+function importarRodizio(){
+  document.getElementById('rodizio-import-input').click();
+}
+function handleRodizioImport(inp){
+  const f=inp.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!Array.isArray(data)) throw new Error('Formato inválido');
+      const current=getRodizio();
+      // Merge avoiding duplicates by name+date+turno
+      const merged=[...current];
+      data.forEach(r=>{
+        if(!merged.find(m=>m.name===r.name&&m.date===r.date&&m.turno===r.turno))
+          merged.push(r);
+      });
+      saveRodizio(merged);
+      renderRodizio();
+      alert('Histórico importado: '+data.length+' registros mesclados.');
+    }catch(err){
+      alert('Erro ao importar: '+err.message);
     }
-
-    // 3. Qualquer driver disponível
-    if(!driver) {
-      driver = fila.find(d => !usados.has(d.id));
-    }
-
-    if(driver) {
-      usados.add(driver.id);
-      alocados.push({ rota, driver, match: driver.clusters === 'ALL' || (clusterRota && driver.clusters.includes(clusterRota)) });
-    } else {
-      semDriver.push(rota);
-    }
-  });
-
-  return { alocados, semDriver, total: rotas.length, dispTotal: dispFiltrado.length };
+  };
+  reader.readAsText(f);
+  inp.value='';
+}
+function exportarRodizio(){
+  const list=getRodizio();
+  if(!list.length){ alert('Nenhum registro para exportar.'); return; }
+  const blob=new Blob([JSON.stringify(list,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='rodizio_shopee_'+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')+'.json';
+  a.click();
+}
+// Retorna quantas DIAS DIFERENTES o driver rodou na janela configurada
+function getRodizioJanela(){
+  return parseInt(document.getElementById('rodizio-days')?.value||'3')||3;
+}
+function vezesRodou(nameNorm){
+  const list = getRodizio();
+  const dias = getRodizioJanela();
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-dias);
+  const diasUnicos = new Set(
+    list.filter(r=>{
+      if(nrm(r.name)!==nameNorm) return false;
+      const [dd,mm,yyyy] = r.date.split('/');
+      return new Date(`${yyyy}-${mm}-${dd}`) > cutoff;
+    }).map(r=>r.date)
+  );
+  return diasUnicos.size;
 }
 
-function renderEscalaResultado(resultado) {
-  const div = document.getElementById('escalaResultado');
-  div.style.display = 'block';
+// ── HELPERS ──────────────────────────────────────────────────────
+function nrm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
 
-  const { alocados, semDriver, total, dispTotal } = resultado;
+function getHorarios(){
+  const amS = document.getElementById('am-start')?.value || '04:45';
+  const sdS = document.getElementById('sd-start')?.value || '12:00';
+  return { amStart: amS, sdStart: sdS };
+}
 
-  let html = `
-    <div class="cards-grid" style="margin-bottom:20px">
-      <div class="card"><div class="card-value" style="color:var(--green)">${alocados.length}</div><div class="card-label">Drivers Alocados</div></div>
-      <div class="card"><div class="card-value" style="color:var(--red)">${semDriver.length}</div><div class="card-label">Rotas sem Driver</div></div>
-      <div class="card"><div class="card-value">${total}</div><div class="card-label">Total de Rotas</div></div>
-      <div class="card"><div class="card-value">${dispTotal}</div><div class="card-label">Drivers Disponíveis</div></div>
-    </div>
-  `;
+function parseTurno(v){
+  if(v===null||v===undefined) return null;
+  // Normaliza: remove aspas simples extras, quebras de linha reais/literais
+  let s = String(v)
+    .replace(/^'+|'+$/g,'')   // remove aspas simples no início/fim: '04:45' → 04:45
+    .replace(/\\n/g,' ')     // \n literal → espaço
+    .replace(/\n/g,' ')       // quebra de linha real → espaço
+    .replace(/\r/g,' ')       // carriage return → espaço
+    .trim();
+  if(!s || s==='--') return null;
+  if(nrm(s).includes('not available') || nrm(s).includes('pending')) return null;
+  const { amStart, sdStart } = getHorarios();
+  const hasAM = s.includes(amStart);
+  const hasSD = s.includes(sdStart);
+  if(hasAM && hasSD) return 'AMBOS';
+  if(hasAM) return 'AM';
+  if(hasSD) return 'SD';
+  return null;
+}
 
-  // Tabela de alocados
-  html += `
-    <div class="result-section">
-      <h3>✅ Drivers Alocados (${alocados.length})</h3>
-      <div style="overflow-x:auto">
-      <table>
-        <thead><tr>
-          <th>Rota</th><th>AT/TO</th><th>Cluster</th><th>Paradas</th><th>Driver</th><th>Modal</th><th>NS</th><th>Match</th>
-        </tr></thead>
-        <tbody>
-  `;
-  alocados.forEach(({ rota, driver, match }) => {
-    html += `<tr>
-      <td><strong>${rota.rota}</strong></td>
-      <td style="font-size:11px">${rota.at}</td>
-      <td>${rota.cluster}</td>
-      <td>${rota.paradas}</td>
-      <td>${driver.nome}</td>
-      <td><span class="badge badge-${driver.modal.toLowerCase()}">${driver.modal}</span></td>
-      <td><span class="${nsClass(driver.noShow)}">${driver.noShow}</span></td>
-      <td>${match ? '✅' : '⚠️'}</td>
-    </tr>`;
-  });
-  html += '</tbody></table></div></div>';
+function driverFitCluster(dc,rc){
+  if(!rc||rc==='-'||rc==='') return true;
+  const d = nrm(dc||'');
+  if(d.includes('all')) return true;
+  // Driver clusters: separados por vírgula
+  const dParts = d.split(',').map(p=>p.trim()).filter(p=>p);
+  // Rota clusters: pode ter múltiplos separados por ; ou ,
+  const rParts = nrm(rc).split(/[;,]/).map(p=>p.trim()).filter(p=>p);
+  // Match: pelo menos UM cluster da rota deve estar na lista do driver
+  return rParts.some(rp => dParts.some(dp => dp===rp || dp.includes(rp) || rp.includes(dp)));
+}
 
-  // Rotas sem driver
-  if(semDriver.length > 0) {
-    html += `
-      <div class="result-section">
-        <h3 style="color:var(--red)">🚫 Rotas sem Driver (${semDriver.length})</h3>
-        <div style="overflow-x:auto"><table>
-          <thead><tr><th>Rota</th><th>AT/TO</th><th>Cluster</th><th>Paradas</th></tr></thead>
-          <tbody>
-    `;
-    semDriver.forEach(r => {
-      html += `<tr><td>${r.rota}</td><td style="font-size:11px">${r.at}</td><td>${r.cluster}</td><td>${r.paradas}</td></tr>`;
+function parseVol(v){
+  // Remove ponto separador de milhar brasileiro: 1.168 → 1168
+  return parseFloat((v||'0').toString().replace(/\./g,'').replace(',','.'))||0;
+}
+
+function getModalOrder(vol, rotaModal, g, gg){
+  const v=parseVol(vol);
+  const hasGG=(parseInt(gg)||0)>0;
+  const hasG=(parseInt(g)||0)>0;
+  const m=(rotaModal||'').toUpperCase();
+
+  // MOTO: SEMPRE só moto — nada muda
+  if(m==='MOTO') return ['MOTO'];
+
+  // Volume alto — independente de modal
+  if(v>1800) return ['VAN','FIORINO','PASSEIO'];
+
+  // GG → sobe modal: PASSEIO→FIORINO, FIORINO→VAN, VAN→VAN
+  if(hasGG){
+    if(m==='PASSEIO') return ['FIORINO','PASSEIO'];
+    if(m==='FIORINO') return ['FIORINO','PASSEIO'];
+    if(m==='VAN')     return ['VAN','FIORINO','PASSEIO'];
+  }
+
+  // G → sobe para Fiorino se for Passeio, mantém se já for Fiorino/Van
+  if(hasG){
+    if(m==='PASSEIO') return ['FIORINO','PASSEIO'];
+    if(m==='FIORINO') return ['FIORINO','PASSEIO'];
+    if(m==='VAN')     return ['VAN','FIORINO','PASSEIO'];
+  }
+
+  // Volume médio — Fiorino como base
+  if(v>800) return ['FIORINO','PASSEIO'];
+
+  // Modal original da rota
+  if(m==='VAN')     return ['VAN','FIORINO','PASSEIO'];
+  if(m==='PASSEIO') return ['PASSEIO','FIORINO'];
+  if(m==='FIORINO') return ['FIORINO','PASSEIO'];
+  return [m];
+}
+
+function modalBadge(m){
+  const k=nrm(m||'');
+  if(k==='moto')    return`<span class="badge bsp-moto">Moto</span>`;
+  if(k==='fiorino') return`<span class="badge bsp-fiorino">Fiorino</span>`;
+  if(k==='passeio') return`<span class="badge bsp-passeio">Passeio</span>`;
+  if(k==='van')     return`<span class="badge bsp-van">Van</span>`;
+  return m?`<span class="badge bsp-moto">${m}</span>`:'-';
+}
+function turnoBadge(t){
+  const s=(t||'').toUpperCase();
+  if(s==='AM')    return`<span class="badge bsp-am">AM</span>`;
+  if(s==='SD')    return`<span class="badge bsp-sd">SD</span>`;
+  if(s==='AMBOS') return`<span class="badge bsp-both">AM+SD</span>`;
+  return t?`<span class="badge bsp-am">${t}</span>`:'';
+}
+
+// ── PLOTADOS ─────────────────────────────────────────────────────
+function syncBulkPloatados(){
+  // Bulk textarea → individual rows sync is one-way (bulk is source of truth for names without modal)
+}
+function getPlotados(){
+  // From bulk textarea — limpa line endings e espacos extras
+  const raw = (document.getElementById('bulk-plotados').value||'');
+  const bulk = raw
+    .split(/\r?\n/)
+    .map(n=>n.replace(/\s+/g,' ').trim())
+    .filter(n=>n.length>0)
+    .map(n=>({nameNorm:nrm(n), modal:'', name:n}));
+  // From individual rows (with modal)
+  const individual = Array.from(document.querySelectorAll('.plotado-row')).map(r=>({
+    nameNorm:nrm(r.querySelector('input').value.replace(/\s+/g,' ').trim()),
+    modal:r.querySelector('select').value,
+    name:r.querySelector('input').value.trim()
+  })).filter(p=>p.nameNorm.length>0);
+  // Merge: individual overrides bulk if same name
+  const map = {};
+  bulk.forEach(p=>{ if(p.nameNorm) map[p.nameNorm]=p; });
+  individual.forEach(p=>{ if(p.nameNorm) map[p.nameNorm]=p; });
+  return Object.values(map);
+}
+function addPlt(){
+  const a=document.getElementById('plotados-area');
+  const d=document.createElement('div');
+  d.className='plotado-row';
+  d.innerHTML=`<input type="text" placeholder="Nome exato..."/><select><option value="">Modal</option><option value="MOTO">Moto</option><option value="FIORINO">Fiorino</option><option value="PASSEIO">Passeio</option><option value="VAN">Van</option></select><button class="rm-btn" onclick="this.parentElement.remove()">×</button>`;
+  a.appendChild(d);
+}
+
+// ── PENALIZADOS ───────────────────────────────────────────────────
+function getPenalizados(){
+  const bulk=(document.getElementById('bulk-penalizados').value||'')
+    .split('\n').map(n=>nrm(n.trim())).filter(n=>n.length>0);
+  const individual=Array.from(document.querySelectorAll('.penal-row')).map(r=>nrm(r.querySelector('input').value)).filter(n=>n.length>0);
+  return [...new Set([...bulk,...individual])];
+}
+function addPenal(){
+  const a=document.getElementById('penais-area');
+  const d=document.createElement('div');
+  d.className='penal-row';
+  d.innerHTML=`<input type="text" placeholder="Nome exato..."/><button class="rm-btn" onclick="this.parentElement.remove()">×</button>`;
+  a.appendChild(d);
+}
+
+// ── FILE LOADING ──────────────────────────────────────────────────
+async function loadDisp(inp){
+  const f=inp.files[0]; if(!f) return;
+  const btn=document.getElementById('disp-btn');
+  btn.innerHTML='<i class="ti ti-loader" style="font-size:24px;display:block;margin-bottom:4px"></i><span>Carregando...</span>'; btn.className='file-upload';
+  try{
+    const buf=await f.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array'});
+    dispData=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+    const keys=Object.keys(dispData[0]||{});
+    const colDia=keys[5]||'?';
+    let am=0,sd=0,both=0,dupes=0;
+    const seenIds=new Set();
+    dispData.forEach(d=>{
+      const did=String(d['Driver ID']||'');
+      if(did&&seenIds.has(did)){ dupes++; return; }
+      if(did) seenIds.add(did);
+      const t=parseTurno(String(d[colDia]||''));
+      if(t==='AM') am++;
+      else if(t==='SD') sd++;
+      else if(t==='AMBOS') both++;
     });
-    html += '</tbody></table></div></div>';
+    const {amStart:aS,sdStart:sS}=getHorarios();
+    const dupeMsg=dupes>0?` | ⚠️ ${dupes} duplicatas removidas`:'';
+    btn.textContent=`✓ ${f.name} | data: ${colDia} | AM(${aS}):${am} SD(${sS}):${sd} AM+SD:${both}${dupeMsg}`;
+    btn.className='file-upload loaded';
+  }catch(e){
+    btn.textContent='Erro ao ler arquivo';
+    btn.className='file-upload erro';
+  }
+  checkReady();
+}
+
+async function loadEscala(inp){
+  const f=inp.files[0]; if(!f) return;
+  const btn=document.getElementById('esc-btn');
+  btn.innerHTML='<i class="ti ti-loader" style="font-size:24px;display:block;margin-bottom:4px"></i><span>Carregando...</span>'; btn.className='file-upload';
+  try{
+    const text=await f.text();
+    const parsed=Papa.parse(text,{header:true,skipEmptyLines:true});
+    escData=parsed.data.filter(r=>{
+      const cl=(r['clusters']||r['cluster']||'').trim();
+      return r['Rota']&&cl&&cl!=='-';
+    }).map(r=>({
+      turno:r['Ciclo']||'',
+      rota:r['Rota']||'',
+      letra:r['Gaiola']||r['Letra']||'',
+      cluster:(r['clusters']||r['cluster']||'').trim(),
+      modal:(r['Tipo de veículo']||'').trim().toUpperCase(),
+      volume:r['Volume total da rota (litros)']||0,
+      bairro:r['Bairro']||'',
+      at:r['AT / TO']||r['AT']||'',
+      g:parseInt(r['G']||0)||0,
+      gg:parseInt(r['GG']||0)||0
+    }));
+    const ciclos=[...new Set(escData.map(r=>r.turno).filter(Boolean))];
+    btn.textContent=`✓ ${f.name} | ${escData.length} rotas | ciclos: ${ciclos.join(', ')}`;
+    btn.className='file-upload loaded';
+    const pi=document.getElementById('pre-info');
+    if(pi) pi.textContent=`Ciclos: ${ciclos.join(', ')} — PM1 = SD (tarde), AM = manhã`;
+  }catch(e){
+    btn.textContent='Erro ao ler arquivo';
+    btn.className='file-upload erro';
+  }
+  checkReady();
+}
+
+function checkReady(){
+  document.getElementById('run-btn').disabled=!(dispData.length&&escData.length);
+}
+
+// ── MAIN LOGIC ────────────────────────────────────────────────────
+function runEscala(){
+  try {
+  // Validação básica
+  if(!dispData.length || !escData.length){
+    alert('Importe os dois arquivos antes de gerar a escala.');
+    return;
   }
 
-  // Botões
-  html += `<div style="display:flex;gap:8px;margin-top:16px">
-    <button class="btn btn-success" onclick="exportarEscala()">⬇️ Exportar CSV</button>
-    <button class="btn btn-secondary" onclick="window.print()">🖨️ Imprimir</button>
-  </div>`;
+  const turnoSel=document.querySelector('input[name="turno"]:checked').value;
+  const plotados=getPlotados();
+  const penalizados=getPenalizados();
+  allRows=[]; livresData=[]; alertas=[];
+  const used=new Set();
 
-  div.innerHTML = html;
-}
+  const keys=Object.keys(dispData[0]||{});
+  const todayCol=keys[5]||null;
 
-// ============================================================
-//  HELPERS
-// ============================================================
-function nsClass(n) {
-  n = parseInt(n);
-  if(n === 0) return 'ns-badge ns-0';
-  if(n <= 2)  return 'ns-badge ns-1';
-  if(n <= 4)  return 'ns-badge ns-3';
-  return 'ns-badge ns-5plus';
-}
+  // Build available drivers
+  const _available=dispData.map(d=>{
+    const turno=parseTurno(String(d[todayCol]||''));
+    if(!turno) return null;
+    const fit=(turnoSel==='AM'&&(turno==='AM'||turno==='AMBOS'))||
+              (turnoSel==='SD'&&(turno==='SD'||turno==='AMBOS'))||
+              (turnoSel==='AMBOS');
+    if(!fit) return null;
+    return{
+      name:String(d['Driver Name']||''),
+      nameNorm:nrm(d['Driver Name']||''),
+      cluster:String(d['Cluster']||''),
+      modal:String(d['Vehicle Type']||'').toUpperCase().replace('PASSAIO','PASSEIO'),
+      turno,
+      noShow:Number(d['No Show Time']||0),
+      noshow:Number(d['No Show Time']||0),
+      id:String(d['Driver ID']||''),
+      isSDOnly: turno==='SD'
+    };
+  }).filter(d=>d&&!penalizados.includes(d.nameNorm));
 
-function nsBadge(n) { return `<span class="${nsClass(n)}">${n}</span>`; }
+  // Bloquear drivers que já rodaram HOJE (AM não pode rodar SD e vice-versa)
+  const escaladosHoje = getEscaladosHoje();
 
-function turnoFromHorario(h) {
-  const am = h.includes('04:45-08:00');
-  const sd = h.includes('12:00-15:15');
-  if(am && sd) return 'Ambos';
-  if(am) return 'AM';
-  if(sd) return 'SD';
-  return '–';
-}
-
-// ============================================================
-//  DASHBOARD
-// ============================================================
-function updateDash() {
-  document.getElementById('dash-rotas').textContent = STATE.rotas.length || '–';
-  document.getElementById('dash-drivers').textContent = STATE.disponibilidade.length || '–';
-  document.getElementById('dash-alocados').textContent = STATE.escala.length || '–';
-  const pend = STATE.rotas.length > 0 ? Math.max(0, STATE.rotas.length - STATE.escala.length) : '–';
-  document.getElementById('dash-pendentes').textContent = pend;
-
-  if(STATE.rotas.length > 0 && STATE.disponibilidade.length > 0) {
-    document.getElementById('dashSummary').innerHTML = `
-      <div style="padding:16px">
-        <div class="alert alert-info">
-          <strong>${STATE.rotas.length}</strong> rotas planejadas &nbsp;|&nbsp;
-          <strong>${STATE.disponibilidade.length}</strong> drivers disponíveis &nbsp;|&nbsp;
-          ${STATE.escala.length > 0 ? `<strong style="color:var(--green)">${STATE.escala.length}</strong> alocados` : '<span style="color:var(--text-light)">Escala ainda não gerada</span>'}
-        </div>
-      </div>`;
-  }
-}
-
-// ============================================================
-//  DISPONIBILIDADE
-// ============================================================
-function populateClusterFilter() {
-  const clusters = new Set();
-  STATE.disponibilidade.forEach(d => d.clusters.split(',').forEach(c => clusters.add(c.trim())));
-  const sel = document.getElementById('filtroCluster');
-  const prev = sel.value;
-  sel.innerHTML = '<option value="">Todos</option>';
-  [...clusters].sort().forEach(c => {
-    const o = document.createElement('option');
-    o.value = c; o.textContent = c;
-    sel.appendChild(o);
+  // FIX 7: Deduplication by Driver ID (keep first occurrence)
+  const _seenIds = new Set();
+  const _deduped = _available.filter(d=>{
+    if(d.id && _seenIds.has(d.id)) return false;
+    if(d.id) _seenIds.add(d.id);
+    return true;
   });
-  sel.value = prev;
-}
+  const _deduped2 = _deduped;
 
-function renderDisponibilidade() {
-  const turno = document.getElementById('filtroTurnoDisp').value;
-  const modal = document.getElementById('filtroModal').value;
-  const busca = (document.getElementById('buscaDriver').value || '').toLowerCase();
-  const cluster = document.getElementById('filtroCluster').value;
+  // Match exato de nome normalizado — precisa ser definido ANTES de available
+  const isPloatedByName=nameNorm=>plotados.some(p=>p.nameNorm&&nameNorm===p.nameNorm);
+  const isPloated=d=>isPloatedByName(d.nameNorm);
 
-  let drivers = STATE.disponibilidade.filter(d => {
-    if(turno === 'AM' && !d.horario.includes('04:45-08:00')) return false;
-    if(turno === 'SD' && !d.horario.includes('12:00-15:15')) return false;
-    if(modal && d.modal !== modal) return false;
-    if(busca && !d.nome.toLowerCase().includes(busca)) return false;
-    if(cluster && d.clusters !== 'ALL' && !d.clusters.includes(cluster)) return false;
+  // FIX 4: Auto-block por NS threshold + bloquear escalados hoje no mesmo turno
+  const nsThreshold = parseInt(document.getElementById('ns-threshold')?.value||'0');
+  const available = _deduped2.filter(d => {
+    // Plotados NUNCA são bloqueados — nem por rodízio nem por escaladosHoje
+    const ehPlotado = isPloatedByName(d.nameNorm);
+    // Já rodou hoje em outro turno — bloqueado (exceto plotados)
+    if(!ehPlotado && escaladosHoje.has(d.nameNorm)) return false;
+    // NS acima do threshold — bloqueado (exceto plotados)
+    if(nsThreshold > 0 && d.noShow >= nsThreshold && !ehPlotado){
+      alertas.push({rota:'-', cluster:d.cluster, modal:d.modal,
+        msg:'Driver bloqueado por NS=' + d.noShow + ': ' + d.name});
+      return false;
+    }
+    return true;
+  });
+  // Rodízio 3 dias: driver que rodou nos últimos 3 dias vai para o final
+  // Só quebra o rodízio se não houver outra opção
+
+  // Filter routes by turno
+  const rotasFiltradas=escData.filter(r=>{
+    const c=nrm(r.turno);
+    if(turnoSel==='AMBOS') return true;
+    if(turnoSel==='AM') return c==='am';
+    if(turnoSel==='SD') return c==='pm1'||c==='sd';
     return true;
   });
 
-  document.getElementById('dispCount').textContent = `${drivers.length} drivers`;
-  const tbody = document.getElementById('tbodyDisp');
-  tbody.innerHTML = drivers.map(d => `
-    <tr>
-      <td><strong>${d.nome}</strong></td>
-      <td style="font-size:11px;color:var(--text-light)">${d.id}</td>
-      <td><span class="badge badge-${d.modal.toLowerCase()}">${d.modal}</span></td>
-      <td><span class="badge badge-${turnoFromHorario(d.horario).toLowerCase().replace(' ','')}">${turnoFromHorario(d.horario)}</span></td>
-      <td>${nsBadge(d.noShow)}</td>
-      <td style="font-size:11px;color:var(--text-light);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.clusters}">${d.clusters}</td>
-    </tr>`).join('');
-}
-
-// ============================================================
-//  NS KPI
-// ============================================================
-function renderNSKpi() {
-  const d = STATE.disponibilidade;
-  document.getElementById('kpi-zero').textContent = d.filter(x=>x.noShow===0).length;
-  document.getElementById('kpi-baixo').textContent = d.filter(x=>x.noShow>=1&&x.noShow<=2).length;
-  document.getElementById('kpi-medio').textContent = d.filter(x=>x.noShow>=3&&x.noShow<=4).length;
-  document.getElementById('kpi-alto').textContent = d.filter(x=>x.noShow>=5).length;
-
-  const sorted = [...d].sort((a,b)=>b.noShow-a.noShow).filter(x=>x.noShow>0);
-  document.getElementById('tbodyNS').innerHTML = sorted.map((d,i)=>`
-    <tr>
-      <td><strong>${i+1}</strong></td>
-      <td>${d.nome}</td>
-      <td><span class="badge badge-${d.modal.toLowerCase()}">${d.modal}</span></td>
-      <td>${nsBadge(d.noShow)}</td>
-      <td style="font-size:11px;color:var(--text-light)">${d.clusters.split(',').slice(0,3).join(', ')}${d.clusters.split(',').length>3?'…':''}</td>
-    </tr>`).join('');
-}
-
-// ============================================================
-//  RODIZIO
-// ============================================================
-function renderRodizio() {
-  const grid = document.getElementById('rodizioGrid');
-  if(!STATE.disponibilidade.length) return;
-  grid.innerHTML = STATE.disponibilidade.slice(0,40).map(d => `
-    <div class="rodizio-card">
-      <div class="driver-name">${d.nome}</div>
-      <div class="driver-meta">
-        <span><span class="badge badge-${d.modal.toLowerCase()}">${d.modal}</span></span>
-        ${nsBadge(d.noShow)}
-        <span style="font-size:11px">${turnoFromHorario(d.horario)}</span>
-      </div>
-      <div style="margin-top:8px;font-size:11px;color:var(--text-light)">${d.clusters.split(',').slice(0,3).map(c=>`<span style="background:#f0f0f0;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block">${c.trim()}</span>`).join('')}</div>
-    </div>`).join('');
-}
-
-// ============================================================
-//  REVERSAO / NO-SHOW
-// ============================================================
-function populateNSDrivers() {
-  const sel = document.getElementById('selNSDriver');
-  sel.innerHTML = '<option value="">Selecione...</option>';
-  STATE.disponibilidade.forEach(d => {
-    const o = document.createElement('option');
-    o.value = d.nome; o.textContent = d.nome;
-    sel.appendChild(o);
+  // Ordenar por gaiola: A-1, A-2, A-3... B-1, B-2...
+  rotasFiltradas.sort((a,b)=>{
+    const parse = g => {
+      const m = (g||'').match(/^([A-Za-z]+)-?(\d+)$/);
+      return m ? [m[1].toUpperCase(), parseInt(m[2])] : [g||'', 0];
+    };
+    const [la, na] = parse(a.letra);
+    const [lb, nb] = parse(b.letra);
+    if(la !== lb) return la.localeCompare(lb);
+    return na - nb;
   });
+  // ── PRÉ-ALOCAÇÃO DE VAN ──────────────────────────────────
+  // Drivers Van são alocados nas MAIORES rotas dos seus clusters
+  // Score = volume + GG*200 + G*50
+  // Garante que Van nunca sai vazia
+  function rotaScore(rota){
+    return parseVol(rota.volume) + (parseInt(rota.gg)||0)*200 + (parseInt(rota.g)||0)*50;
+  }
+
+  // Rotas candidatas para Van (GG>0 ou volume>1800)
+  const rotasVan = rotasFiltradas
+    .filter(r => (parseInt(r.gg)||0)>0 || parseVol(r.volume)>1800)
+    .sort((a,b) => rotaScore(b) - rotaScore(a)); // maior score primeiro
+
+  const vanUsados = new Set(); // drivers Van já reservados
+  const vanReserva = {}; // rota.rota → driver Van
+
+  // Monta pool de drivers Van (inclui plotados Van também)
+  const poolVan = _deduped2.filter(d =>
+    d.modal==='VAN' && !penalizados.includes(d.nameNorm)
+  );
+
+  // Para cada driver Van, encontra a MAIOR rota nos seus clusters
+  poolVan.forEach(driver=>{
+    if(vanUsados.has(driver.nameNorm)) return;
+    // Busca maior rota ainda não reservada que o driver atende
+    const melhorRota = rotasVan.find(r=>
+      !vanReserva[r.rota] &&
+      driverFitCluster(driver.cluster, r.cluster)
+    );
+    if(melhorRota){
+      vanReserva[melhorRota.rota] = driver;
+      vanUsados.add(driver.nameNorm);
+    }
+  });
+
+  // ── PRÉ-ALOCAÇÃO DE PLOTADOS ─────────────────────────────
+  // Busca todos os drivers plotados disponíveis (nunca bloqueados)
+  const todosDisponiveis = _deduped2.filter(d=>!penalizados.includes(d.nameNorm));
+  const plotadosDisponiveis = todosDisponiveis
+    .filter(d=>isPloated(d))
+    .sort((a,b)=> a.cluster.split(',').length - b.cluster.split(',').length);
+
+  const plotadosUsados = new Set();
+  const plotadoReserva = {};
+
+  rotasFiltradas.forEach(rota=>{
+    const rCluster = rota.cluster;
+    const modalOrder = getModalOrder(rota.volume, rota.modal||'', rota.g||0, rota.gg||0);
+    if(modalOrder[0]==='MOTO') return; // plotados nunca em moto
+    const p = plotadosDisponiveis.find(d=>{
+      if(plotadosUsados.has(d.nameNorm)) return false;
+      if(!driverFitCluster(d.cluster, rCluster)) return false;
+      return true; // plotado vai em qualquer rota não-moto do seu cluster
+    });
+    if(p){ plotadosUsados.add(p.nameNorm); plotadoReserva[rota.rota]=p; }
+  });
+
+  rotasFiltradas.forEach(rota=>{
+    let chosen=null, status='', allocModal='';
+    const rCluster=rota.cluster;
+    const isSdRota=nrm(rota.turno)==='pm1'||nrm(rota.turno)==='sd';
+    const modalOrder=getModalOrder(rota.volume, rota.modal, rota.g, rota.gg);
+    const modalPedido=modalOrder[0];
+    const volFlag=parseVol(rota.volume)>800;
+    const janela = getRodizioJanela();
+
+    function firstClusterMatch(driver, rotaCluster){
+      // Retorna true se o PRIMEIRO cluster do driver bate com o cluster da rota
+      const firstCluster = (driver.cluster||'').split(',')[0].trim();
+      return nrm(firstCluster) === nrm(rotaCluster) || nrm(firstCluster).includes(nrm(rotaCluster)) || nrm(rotaCluster).includes(nrm(firstCluster));
+    }
+    function sortCands(list){
+      return list.sort((a,b)=>{
+        const aVezes=vezesRodou(a.nameNorm);
+        const bVezes=vezesRodou(b.nameNorm);
+        if(aVezes!==bVezes) return aVezes-bVezes;
+        if(isSdRota){
+          const aSD=a.isSDOnly?0:1;
+          const bSD=b.isSDOnly?0:1;
+          if(aSD!==bSD) return aSD-bSD;
+        }
+        // 1ª prioridade: primeiro cluster do driver bate com a rota
+        const aFirst = firstClusterMatch(a, rCluster) ? 0 : 1;
+        const bFirst = firstClusterMatch(b, rCluster) ? 0 : 1;
+        if(aFirst!==bFirst) return aFirst-bFirst;
+        // 2ª prioridade: driver mais específico (menos clusters)
+        const aClusters = (a.cluster||'').split(',').length;
+        const bClusters = (b.cluster||'').split(',').length;
+        if(aClusters!==bClusters) return aClusters-bClusters;
+        return a.noShow-b.noShow;
+      });
+    }
+
+    // 1. Plotado
+    // Plotados: prioridade absoluta em rotas NÃO-MOTO
+    // Ignoram cluster e cubagem — se estão disponíveis, DEVEM ser escalados
+    const rotaEhMoto = modalPedido==='MOTO';
+    // Van pré-reservada para esta rota (maior rota do cluster do driver)
+    const vanReservado = !rotaEhMoto ? vanReserva[rota.rota] : null;
+    if(vanReservado && !used.has(vanReservado.nameNorm)){
+      chosen = vanReservado; status='ok'; allocModal='VAN';
+    }
+    // Plotado pré-reservado para esta rota (só se Van não reservou)
+    if(!chosen) {
+    const reservado = rotaEhMoto ? null : plotadoReserva[rota.rota];
+    // Se reservado mas já usado por outra rota (raro), tenta outro plotado do cluster
+    const pMatch = reservado && !used.has(reservado.nameNorm) ? reservado :
+      (!rotaEhMoto ? plotadosDisponiveis.find(d=>
+        !used.has(d.nameNorm) &&
+        !plotadosUsados.has(d.nameNorm) &&
+        driverFitCluster(d.cluster, rCluster)
+      ) : null);
+    // Plotado aloca com o modal pedido pela rota (não o modal do driver)
+    if(pMatch){ chosen=pMatch; status='plotado'; allocModal=modalOrder[0]==='MOTO'?'MOTO':pMatch.modal; }
+    } // end if(!chosen) for van check
+    if(!chosen){
+      let found=false;
+      for(const tryModal of modalOrder){
+        const cands=sortCands(available.filter(d=>
+          !used.has(d.nameNorm)&&!isPloated(d)&&
+          d.modal===tryModal&&
+          driverFitCluster(d.cluster,rCluster)
+        ));
+        if(cands.length){
+          chosen=cands[0]; allocModal=tryModal; found=true;
+          if(tryModal===modalOrder[0]){
+            status=volFlag?'volume':'ok';
+          } else {
+            status='substituido';
+            const subMsg = modalPedido==='PASSEIO'
+              ? `Passeio indisponível — alocado Fiorino: ${cands[0].name}`
+              : modalPedido==='VAN'
+              ? `VAN indisponível — alocado ${tryModal}: ${cands[0].name}`
+              : `Modal ${modalPedido} indisponível — alocado ${tryModal}: ${cands[0].name}`;
+            alertas.push({rota:rota.rota,cluster:rCluster,modal:modalPedido,msg:subMsg});
+          }
+          break;
+        }
+      }
+      if(!found){
+        // MOTO sem motorista: nunca tenta outro modal
+        // Outros modais: tenta forçar rodízio (aceita quem já rodou hoje)
+        if(modalPedido!=='MOTO'){
+          for(const tryModal of modalOrder){
+            const forced=_deduped2.filter(d=>
+              !used.has(d.nameNorm)&&!isPloatedByName(d.nameNorm)&&
+              d.modal===tryModal&&driverFitCluster(d.cluster,rCluster)&&
+              !penalizados.includes(d.nameNorm)
+            ).sort((a,b)=>vezesRodou(a.nameNorm)-vezesRodou(b.nameNorm)||a.noShow-b.noShow);
+            if(forced.length){
+              chosen=forced[0]; allocModal=tryModal; found=true;
+              status=tryModal===modalOrder[0]?'ok_forcado':'sub_forcado';
+              alertas.push({rota:rota.rota,cluster:rCluster,modal:modalPedido,
+                msg:`Rodízio forçado — driver já rodou hoje: ${forced[0].name}`});
+              break;
+            }
+          }
+        }
+        if(!found){
+          status='sem_driver';
+          alertas.push({rota:rota.rota,cluster:rCluster,modal:modalPedido,
+            msg:`Sem motorista disponível — modal: ${modalPedido}, cluster: ${rCluster}`});
+        }
+      }
+    }
+
+    if(chosen) used.add(chosen.nameNorm);
+    allRows.push({turno:rota.turno,rota:rota.rota,letra:rota.letra,cluster:rCluster,
+      volume:rota.volume,g:rota.g||0,gg:rota.gg||0,modalPedido,
+      driver:chosen?chosen.name:'— sem motorista —',
+      driverId:chosen?chosen.id:'',
+      allocModal,status,volFlag,driverObj:chosen,at:rota.at||''});
+  });
+
+  livresData=available.filter(d=>!used.has(d.nameNorm));
+
+  // Alertar plotados que nao foram escalados
+  const plotadosNaoEscalados = available.filter(d=>
+    isPloated(d) && !used.has(d.nameNorm)
+  );
+  plotadosNaoEscalados.forEach(d=>{
+    alertas.push({rota:'-', cluster:d.cluster, modal:d.modal,
+      msg:`⚠️ PLOTADO NÃO ESCALADO: ${d.name} (${d.modal}) — sem rota disponível para seu modal`});
+  });
+  const expBtn=document.getElementById('export-btn'); if(expBtn) expBtn.disabled=false;
+
+  // Save escalados to rodizio (local + Supabase)
+  const escalados=allRows.filter(r=>r.driverObj).map(r=>r.driverObj);
+  addToRodizio(escalados, turnoSel);
+  if(typeof syncRodizioToHub==='function') syncRodizioToHub(escalados, turnoSel);
+
+  renderResults();
+  } catch(err) {
+    alert('Erro ao gerar escala: ' + err.message + '\n\nVerifique o console para mais detalhes.');
+    console.error('runEscala error:', err);
+  }
 }
 
-function registrarNoShow() {
-  const nome = document.getElementById('selNSDriver').value;
-  const motivo = document.getElementById('selNSMotivo').value;
-  if(!nome) return;
-  STATE.noshows.push({ nome, motivo, hora: new Date().toLocaleTimeString('pt-BR') });
-  renderListaNS();
+// ── RENDER ────────────────────────────────────────────────────────
+function renderResults(){
+  const resEl=document.getElementById('results'); if(resEl) resEl.style.display='block';
+  const total=allRows.length;
+  const filled=allRows.filter(r=>r.status!=='sem_driver').length;
+  const plotCt=allRows.filter(r=>r.status==='plotado').length;
+  const subCt=allRows.filter(r=>r.status==='substituido').length;
+  const volCt=allRows.filter(r=>r.volFlag||r.g>0||r.gg>0).length;
+  const forcCt=allRows.filter(r=>r.status==='ok_forcado'||r.status==='sub_forcado').length;
+  const semCt=allRows.filter(r=>r.status==='sem_driver').length;
+  const sg=document.getElementById('stats-grid'); if(!sg) return; sg.innerHTML=`
+    <div class="stat-box"><div class="num">${total}</div><div class="lbl">Rotas</div></div>
+    <div class="stat-box"><div class="num">${filled}</div><div class="lbl">Preenchidas</div></div>
+    <div class="stat-box"><div class="num">${plotCt}</div><div class="lbl">Plotados</div></div>
+    <div class="stat-box"><div class="num">${volCt}</div><div class="lbl">Por volume</div></div>
+    <div class="stat-box"><div class="num">${subCt}</div><div class="lbl">VAN→Fiorino</div></div>
+    <div class="stat-box"><div class="num" style="color:${forcCt>0?'var(--orange)':'var(--txt)'}">${forcCt}</div><div class="lbl">Rod. forçado</div></div>
+    <div class="stat-box"><div class="num">${livresData.length}</div><div class="lbl">Livres</div></div>
+    <div class="stat-box"><div class="num">${semCt}</div><div class="lbl">Sem motorista</div></div>
+  `;
+  // Rodizio info
+  const rodizio=getRodizio();
+  const today=new Date().toLocaleDateString('pt-BR');
+  const todayCount=rodizio.filter(r=>r.date===today).length;
+  // Rodizio banner
+  const rbox=document.getElementById('rodizio-box');
+  if(rbox){
+    rbox.style.display='block';
+    rbox.innerHTML=`<b>Rodízio:</b> ${todayCount} drivers escalados hoje registrados.
+      <button class="add-entry-btn" style="margin-left:8px" onclick="clearRodizioHoje()"><i class="ti ti-calendar-x"></i> Limpar hoje</button>
+      <button class="add-entry-btn" style="margin-left:4px;color:var(--red)" onclick="clearRodizio()"><i class="ti ti-trash"></i> Limpar tudo</button>`;
+  }
+
+  // Penalizados banner
+  const penList = getPenalizados();
+  const paviso = document.getElementById('penalizados-aviso');
+  if(paviso){
+    if(penList.length){
+      paviso.style.display='flex';
+      const penNames = dispData.filter(d=>penList.includes(nrm(d['Driver Name']||''))).map(d=>d['Driver Name']);
+      paviso.innerHTML=`<i class="ti ti-ban"></i> <b>${penNames.length} penalizado(s):</b>&nbsp;${penNames.join(', ')||penList.join(', ')}`;
+    } else {
+      paviso.style.display='none';
+    }
+  }
+
+  renderEsc(allRows);
+  renderLivres(livresData);
+  renderAlertas(alertas);
+  renderRelatorio();
+  renderRodizio();
+  renderNoShow();
+  afterRenderResults();
 }
 
-function renderListaNS() {
-  const div = document.getElementById('listaNS');
-  if(!STATE.noshows.length) { div.innerHTML=''; return; }
-  div.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Driver</th><th>Motivo</th><th>Hora</th></tr></thead><tbody>${
-    STATE.noshows.map(n=>`<tr><td>${n.nome}</td><td>${n.motivo}</td><td>${n.hora}</td></tr>`).join('')
-  }</tbody></table></div>`;
-}
-
-function renderReversao() {
-  renderListaNS();
-  // Drivers não escalados disponíveis
-  const escaladosIds = new Set(STATE.escala.map(e => e.driver && e.driver.id));
-  const disponiveis = STATE.disponibilidade.filter(d => !escaladosIds.has(d.id));
-  const div = document.getElementById('subsList');
-  if(!disponiveis.length) { div.innerHTML='<div style="color:var(--text-light);font-size:13px">Nenhum driver disponível para substituição.</div>'; return; }
-  div.innerHTML = disponiveis.slice(0,20).map(d =>
-    `<div class="driver-chip">${d.nome} <span style="font-size:10px">${d.modal}</span></div>`
-  ).join('');
-}
-
-// ============================================================
-//  HISTÓRICO
-// ============================================================
-function renderHistorico() {
-  const div = document.getElementById('historicoList');
-  if(!STATE.historico.length) { div.innerHTML='<div style="color:var(--text-light);font-size:13px;padding:20px">Nenhuma escala no histórico ainda.</div>'; return; }
-  div.innerHTML = STATE.historico.map((h,i) => {
-    const d = new Date(h.data);
-    return `<div class="card" style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <strong>Escala ${d.toLocaleString('pt-BR')}</strong>
-          <span class="badge badge-${h.turno.toLowerCase()}" style="margin-left:8px">${h.turno}</span>
-        </div>
-        <div style="font-size:13px;color:var(--text-light)">${h.escala.alocados.length} alocados / ${h.escala.semDriver.length} sem driver</div>
-      </div>
-    </div>`;
+function renderEsc(rows){
+  const b=document.getElementById('tbody-escala');
+  if(!rows.length){b.innerHTML=`<tr><td colspan="9" class="no-result">Nenhuma rota encontrada</td></tr>`;return;}
+  b.innerHTML=rows.map(r=>{
+    const sb=r.status==='plotado'?`<span class="badge bsp-plotado">Plotado</span>`:
+      r.status==='ok'?`<span class="badge bsp-ok">OK</span>`:
+      r.status==='volume'?`<span class="badge bsp-vol">Volume</span>`:
+      r.status==='substituido'?`<span class="badge bsp-sub">VAN→Fiorino</span>`:
+      r.status==='ok_forcado'?`<span class="badge bsp-sub">Rodízio forçado</span>`:
+      r.status==='sub_forcado'?`<span class="badge bsp-sub">Sub+Rodízio</span>`:
+      `<span class="badge bsp-err">Sem motorista</span>`;
+    const rc=r.status==='sem_driver'?'err-row':r.status==='substituido'?'sub-row':'';
+    const vol=parseVol(r.volume);
+    const volStr=vol>0?`<span style="${r.volFlag?'color:#0d47a1;font-weight:600':''}">${vol.toLocaleString('pt-BR')}L</span>`:'-';
+    return`<tr class="${rc}">
+      <td>${turnoBadge(r.turno)}</td>
+      <td style="font-weight:600">${r.rota}</td>
+      <td style="color:var(--sp-text-muted);font-size:12px">${r.letra||'-'}</td>
+      <td style="font-size:11px;color:var(--sp-text-muted);max-width:140px;word-break:break-all">${r.at||'-'}</td>
+      <td style="font-size:12px;color:var(--sp-text-muted);max-width:130px">${r.cluster}</td>
+      <td>${volStr}</td>
+      <td style="font-size:12px">${r.gg>0?`<span class="badge bsp-err">GG:${r.gg}</span>`:r.g>0?`<span class="badge bsp-sub">G:${r.g}</span>`:'-'}</td>
+      <td>${modalBadge(r.modalPedido)}</td>
+      <td style="font-weight:500">${r.driver}</td>
+      <td style="font-size:12px;color:var(--sp-text-muted)">${r.driverId||'-'}</td>
+      <td>${r.allocModal?modalBadge(r.allocModal):'-'}</td>
+      <td>${sb}</td>
+    </tr>`;
   }).join('');
 }
 
-// ============================================================
-//  EXPORT
-// ============================================================
-function exportarEscala() {
-  if(!STATE.escala.length) return;
-  const rows = [['Rota','AT/TO','Cluster','Paradas','Driver','Modal','NoShow','Match']];
-  STATE.escala.forEach(({ rota, driver, match }) => {
-    rows.push([rota.rota, rota.at, rota.cluster, rota.paradas, driver.nome, driver.modal, driver.noShow, match?'Sim':'Não']);
-  });
-  const csv = rows.map(r => r.join(',')).join('\n');
-  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `escala_${new Date().toISOString().slice(0,10)}.csv`; a.click();
-  URL.revokeObjectURL(url);
+function renderLivres(rows){
+  const b=document.getElementById('tbody-livres');
+  if(!rows.length){b.innerHTML=`<tr><td colspan="6" class="no-result">Todos os disponíveis foram alocados!</td></tr>`;return;}
+  const janela=getRodizioJanela();
+  b.innerHTML=rows.map(d=>{
+    const vezes=vezesRodou(d.nameNorm);
+    const badge=vezes>=janela?`<span class="badge bsp-err">Rodou ${vezes}x (${janela}d)</span>`:
+                vezes>0?`<span class="badge bsp-sub">Rodou ${vezes}x (${janela}d)</span>`:
+                `<span class="badge bsp-novo">Novo</span>`;
+    return`<tr>
+      <td style="font-size:12px;color:var(--muted)">${d.id||'-'}</td>
+      <td style="font-weight:500">${d.name}</td>
+      <td>${modalBadge(d.modal)}</td>
+      <td>${turnoBadge(d.turno)}</td>
+      <td style="font-size:12px;color:var(--muted);max-width:180px">${d.cluster}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
 }
 
-// ============================================================
-//  TABS
-// ============================================================
-function switchTab(id, el) {
-  document.querySelectorAll('#page-reversaoNoShow .tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('#page-reversaoNoShow .tab').forEach(t => t.classList.remove('active'));
+function renderAlertas(rows){
+  const b=document.getElementById('tbody-alertas');
+  if(!rows.length){b.innerHTML=`<tr><td colspan="4" class="no-result">Nenhum alerta!</td></tr>`;return;}
+  b.innerHTML=rows.map(a=>`<tr>
+    <td style="font-weight:500">${a.rota}</td>
+    <td style="font-size:12px">${a.cluster}</td>
+    <td>${modalBadge(a.modal)}</td>
+    <td style="font-size:12px;color:var(--muted)">${a.msg}</td>
+  </tr>`).join('');
+  renderDriverDay(rows);
+}
+
+function renderRelatorio(){
+  const c = document.getElementById('relatorio-content');
+  if(!c || !allRows.length) return;
+
+  const total=allRows.length;
+  const ok=allRows.filter(r=>r.status==='ok').length;
+  const plotadosCt=allRows.filter(r=>r.status==='plotado').length;
+  const sub=allRows.filter(r=>r.status==='substituido'||r.status==='sub_forcado').length;
+  const forcado=allRows.filter(r=>r.status==='ok_forcado'||r.status==='sub_forcado').length;
+  const sem=allRows.filter(r=>r.status==='sem_driver').length;
+  const vanCt=allRows.filter(r=>r.allocModal==='VAN').length;
+  const fiorCt=allRows.filter(r=>r.allocModal==='FIORINO').length;
+  const passCt=allRows.filter(r=>r.allocModal==='PASSEIO').length;
+  const motoCt=allRows.filter(r=>r.allocModal==='MOTO').length;
+
+  // By cluster
+  const byCluster={};
+  allRows.forEach(function(r){
+    const k=r.cluster||'?';
+    if(!byCluster[k]) byCluster[k]={total:0,ok:0,plotado:0,sub:0,forcado:0,sem:0,modais:{}};
+    byCluster[k].total++;
+    if(r.status==='ok') byCluster[k].ok++;
+    else if(r.status==='plotado') byCluster[k].plotado++;
+    else if(r.status==='substituido'||r.status==='sub_forcado') byCluster[k].sub++;
+    else if(r.status==='ok_forcado') byCluster[k].forcado++;
+    else if(r.status==='sem_driver') byCluster[k].sem++;
+    if(r.allocModal) byCluster[k].modais[r.allocModal]=(byCluster[k].modais[r.allocModal]||0)+1;
+  });
+
+  let clusterRows='';
+  Object.entries(byCluster).sort(function(a,b){return b[1].total-a[1].total;}).forEach(function(entry){
+    const cluster=entry[0], d=entry[1];
+    const modaisStr=Object.entries(d.modais).map(function(e){return modalBadge(e[0])+' '+e[1];}).join(' ');
+    clusterRows+='<tr><td style="font-weight:600">'+cluster+'</td><td style="text-align:center">'+d.total+'</td>'
+      +'<td style="text-align:center;color:var(--green);font-weight:600">'+(d.ok+d.plotado)+'</td>'
+      +'<td style="text-align:center;color:var(--orange)">'+d.sub+'</td>'
+      +'<td style="text-align:center;color:var(--orange)">'+d.forcado+'</td>'
+      +'<td style="text-align:center;color:var(--red)">'+d.sem+'</td>'
+      +'<td style="font-size:11px">'+modaisStr+'</td></tr>';
+  });
+
+  let motivoRows='';
+  allRows.filter(function(r){return r.status!=='ok';}).forEach(function(r){
+    const motivo=r.status==='plotado'?'Plotado alocado com prioridade'
+      :r.status==='substituido'?'Modal indisponível — substituto alocado'
+      :r.status==='ok_forcado'?'Rodízio forçado — driver já rodou hoje'
+      :r.status==='sub_forcado'?'Substituição + rodízio forçado'
+      :r.status==='sem_driver'?'⚠️ Sem motorista disponível'
+      :r.status==='volume'?'Alocado por regra de volume':r.status;
+    motivoRows+='<tr class="'+(r.status==='sem_driver'?'err-row':'')+'"><td style="font-weight:500">'+r.rota+'</td>'
+      +'<td style="color:var(--muted);font-size:12px">'+r.letra+'</td>'
+      +'<td style="font-size:12px">'+r.cluster+'</td>'
+      +'<td>'+modalBadge(r.modalPedido)+'</td>'
+      +'<td>'+r.driver+'</td>'
+      +'<td>'+(r.allocModal?modalBadge(r.allocModal):'-')+'</td>'
+      +'<td style="font-size:12px;color:var(--muted)">'+motivo+'</td></tr>';
+  });
+
+  c.innerHTML='<div class="kpi-grid" style="margin-bottom:1.5rem">'
+    +'<div class="kpi-card"><div class="knum">'+total+'</div><div class="klbl">Total rotas</div></div>'
+    +'<div class="kpi-card"><div class="knum" style="color:var(--green)">'+(ok+plotadosCt)+'</div><div class="klbl">Alocadas OK</div></div>'
+    +'<div class="kpi-card"><div class="knum" style="color:var(--sp)">'+plotadosCt+'</div><div class="klbl">Plotados</div></div>'
+    +'<div class="kpi-card"><div class="knum" style="color:var(--orange)">'+sub+'</div><div class="klbl">Substituições</div></div>'
+    +'<div class="kpi-card"><div class="knum" style="color:var(--orange)">'+forcado+'</div><div class="klbl">Rod. forçado</div></div>'
+    +'<div class="kpi-card"><div class="knum" style="color:var(--red)">'+sem+'</div><div class="klbl">Sem motorista</div></div>'
+    +'</div>'
+    +'<div class="section-sub">Modais alocados</div>'
+    +'<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:1.5rem">'
+    +'<div class="kpi-card" style="min-width:120px"><div class="knum">'+vanCt+'</div><div class="klbl">Van</div></div>'
+    +'<div class="kpi-card" style="min-width:120px"><div class="knum">'+fiorCt+'</div><div class="klbl">Fiorino</div></div>'
+    +'<div class="kpi-card" style="min-width:120px"><div class="knum">'+passCt+'</div><div class="klbl">Passeio</div></div>'
+    +'<div class="kpi-card" style="min-width:120px"><div class="knum">'+motoCt+'</div><div class="klbl">Moto</div></div>'
+    +'</div>'
+    +'<div class="section-sub">Por cluster</div>'
+    +'<div class="table-wrap"><table class="data-table"><thead><tr>'
+    +'<th>Cluster</th><th>Rotas</th><th>OK</th><th>Substituição</th><th>Rod. forçado</th><th>Sem motorista</th><th>Modais</th>'
+    +'</tr></thead><tbody>'+clusterRows+'</tbody></table></div>'
+    +'<div class="section-sub" style="margin-top:1.5rem">Motivos de alocação (rotas não-OK)</div>'
+    +'<div class="table-wrap"><table class="data-table"><thead><tr>'
+    +'<th>Rota</th><th>Gaiola</th><th>Cluster</th><th>Modal pedido</th><th>Motorista</th><th>Modal alocado</th><th>Motivo</th>'
+    +'</tr></thead><tbody>'+motivoRows+'</tbody></table></div>';
+}
+
+
+function renderDriverDay(alertRows){
+  const b=document.getElementById('tbody-driver-day');
+  if(!b) return;
+  const semMotorista=alertRows.filter(a=>a.msg&&a.msg.includes('Sem motorista'));
+  if(!semMotorista.length){
+    b.innerHTML=`<tr><td colspan="4" class="no-result" style="color:var(--green)">✅ Todas as regiões foram atendidas!</td></tr>`;
+    return;
+  }
+  const grouped={};
+  semMotorista.forEach(a=>{
+    const key=(a.cluster||'')+' || '+(a.modal||'');
+    if(!grouped[key]) grouped[key]={cluster:a.cluster,modal:a.modal,rotas:[],count:0};
+    grouped[key].rotas.push(a.rota);
+    grouped[key].count++;
+  });
+  b.innerHTML=Object.values(grouped).sort((a,b)=>b.count-a.count).map(g=>`<tr>
+    <td style="font-weight:600">${g.cluster}</td>
+    <td>${modalBadge(g.modal)}</td>
+    <td style="text-align:center">
+      <span style="background:#FFEBEE;color:#B71C1C;padding:3px 10px;border-radius:99px;font-weight:700;font-size:13px">${g.count} rota${g.count>1?'s':''}</span>
+    </td>
+    <td style="font-size:12px;color:var(--muted)">
+      Realizar <b>Driver Day</b> em <b>${g.cluster}</b> com <b>${g.modal}</b>.<br>
+      <span style="font-size:11px">Rotas: ${g.rotas.slice(0,10).join(', ')}${g.rotas.length>10?' ...':''}</span>
+    </td>
+  </tr>`).join('');
+}
+
+
+function renderRodizio(){
+  const b=document.getElementById('tbody-rodizio');
+  const list=getRodizio();
+  if(!list.length){b.innerHTML=`<tr><td colspan="5" class="no-result">Nenhum registro ainda</td></tr>`;return;}
+  // Agrupa por driver — contagem total e últimas datas
+  const map={};
+  list.forEach(r=>{
+    const k=nrm(r.name);
+    if(!map[k]) map[k]={name:r.name,modal:r.modal,dates:[],turnos:[]};
+    if(!map[k].dates.includes(r.date)) map[k].dates.push(r.date);
+    map[k].turnos.push(r.turno);
+  });
+  const rows=Object.values(map).sort((a,b)=>b.dates.length-a.dates.length);
+  // Header already defined in HTML
+  b.innerHTML=rows.map(r=>{
+    const vezes=r.dates.length;
+    const color=vezes>=3?'#f44336':vezes>=2?'#ff9800':'#4caf50';
+    const datas=r.dates.slice(-3).join(', ');
+    const turnosUniq=[...new Set(r.turnos)].join(', ');
+    return`<tr>
+      <td style="font-weight:600">${r.name}</td>
+      <td>${modalBadge(r.modal)}</td>
+      <td><span style="font-weight:700;font-size:15px;color:${color}">${vezes}x</span></td>
+      <td style="font-size:12px;color:#888">${datas}</td>
+      <td style="font-size:12px">${turnosUniq}</td>
+    </tr>`;
+  }).join('');
+}
+
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-body').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.sp-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  el.classList.add('active');
+  btn.classList.add('active');
+}
+
+function filterEscala(){
+  const q=nrm(document.getElementById('search-escala').value);
+  if(!q){renderEsc(allRows);return;}
+  renderEsc(allRows.filter(r=>nrm(r.driver).includes(q)||nrm(r.rota).includes(q)||nrm(r.cluster).includes(q)||nrm(r.letra).includes(q)));
+}
+
+function filterLivres(){
+  const q=nrm(document.getElementById('search-livres').value);
+  if(!q){renderLivres(livresData);return;}
+  renderLivres(livresData.filter(d=>nrm(d.name).includes(q)||nrm(d.modal).includes(q)||nrm(d.cluster).includes(q)));
+}
+// ── NO-SHOW KPI ───────────────────────────────────────────────────
+let nsAllDrivers = [];
+
+function renderNoShow(){
+  if(!dispData.length) return;
+  const container = document.getElementById('noshow-content'); if(!container) return;
+
+  // Build driver list with noshow
+  nsAllDrivers = dispData.map(d=>({
+    name: String(d['Driver Name']||''),
+    modal: String(d['Vehicle Type']||'').toUpperCase(),
+    cluster: String(d['Cluster']||''),
+    noshow: Number(d['No Show Time']||0)
+  })).sort((a,b)=>b.noshow-a.noshow);
+
+  const total = nsAllDrivers.length;
+  const comNS = nsAllDrivers.filter(d=>d.noshow>0).length;
+  const semNS = total - comNS;
+  const totalNS = nsAllDrivers.reduce((s,d)=>s+d.noshow,0);
+  const media = (totalNS/total).toFixed(1);
+  const alto = nsAllDrivers.filter(d=>d.noshow>=5).length;
+  const medio = nsAllDrivers.filter(d=>d.noshow>=3&&d.noshow<5).length;
+
+  // By modal
+  const modals = {};
+  nsAllDrivers.forEach(d=>{
+    if(!modals[d.modal]) modals[d.modal]={sum:0,count:0};
+    modals[d.modal].sum += d.noshow;
+    modals[d.modal].count++;
+  });
+  const maxModalMedia = Math.max(...Object.values(modals).map(m=>m.sum/m.count));
+
+  // Faixas
+  const faixas = [
+    {label:'Sem no-show (0)', count: nsAllDrivers.filter(d=>d.noshow===0).length, color:'#4caf50'},
+    {label:'Baixo (1–2)',      count: nsAllDrivers.filter(d=>d.noshow>=1&&d.noshow<=2).length, color:'#ffc107'},
+    {label:'Médio (3–4)',      count: nsAllDrivers.filter(d=>d.noshow>=3&&d.noshow<=4).length, color:'#ff9800'},
+    {label:'Alto (5+)',        count: nsAllDrivers.filter(d=>d.noshow>=5).length, color:'#f44336'},
+  ];
+
+  const maxFaixa = Math.max(...faixas.map(f=>f.count));
+  const maxNS = nsAllDrivers[0]?.noshow||1;
+
+  container.innerHTML = `
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-num" style="color:#1a1a1a">${total}</div><div class="kpi-label">Total drivers</div></div>
+      <div class="kpi-card"><div class="kpi-num" style="color:#f44336">${comNS}</div><div class="kpi-label">Com no-show</div><div class="kpi-sub">${((comNS/total)*100).toFixed(0)}% da base</div></div>
+      <div class="kpi-card"><div class="kpi-num" style="color:#4caf50">${semNS}</div><div class="kpi-label">Sem no-show</div></div>
+      <div class="kpi-card"><div class="kpi-num" style="color:#ff9800">${media}</div><div class="kpi-label">Média por driver</div></div>
+      <div class="kpi-card"><div class="kpi-num" style="color:#f44336">${alto}</div><div class="kpi-label">Risco alto (5+)</div></div>
+      <div class="kpi-card"><div class="kpi-num" style="color:#ff9800">${medio}</div><div class="kpi-label">Risco médio (3–4)</div></div>
+      <div class="kpi-card"><div class="kpi-num" style="color:#1a1a1a">${totalNS}</div><div class="kpi-label">Total recusas</div></div>
+    </div>
+
+    <!-- Por modal -->
+    <div class="section-sub">Média de no-show por modal</div>
+    <div style="margin-bottom:1.5rem">
+      ${Object.entries(modals).sort((a,b)=>(b[1].sum/b[1].count)-(a[1].sum/a[1].count)).map(([modal,m])=>{
+        const med = (m.sum/m.count).toFixed(1);
+        const pct = ((m.sum/m.count)/maxModalMedia*100).toFixed(0);
+        const color = med>=3?'#f44336':med>=2?'#ff9800':med>=1?'#ffc107':'#4caf50';
+        return `<div class="bar-row">
+          <div class="bar-label">${modal} (${m.count})</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+          <div class="bar-val" style="color:${color}">${med}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <!-- Distribuição por faixa -->
+    <div class="section-sub">Distribuição por faixa de no-show</div>
+    <div style="margin-bottom:1.5rem">
+      ${faixas.map(f=>{
+        const pct = (f.count/maxFaixa*100).toFixed(0);
+        return `<div class="bar-row">
+          <div class="bar-label">${f.label}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${f.color}"></div></div>
+          <div class="bar-val" style="color:${f.color}">${f.count}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <!-- Top ofensores -->
+    <div class="section-sub">Ranking de ofensores</div>
+    <input type="search" class="ns-search" id="ns-search" placeholder="Buscar motorista..." oninput="filterNS()">
+    <div class="table-wrap" id="ns-table-wrap">
+      ${renderNSTable(nsAllDrivers.filter(d=>d.noshow>0), maxNS)}
+    </div>
+  `;
+}
+
+function renderNSTable(drivers, maxNS){
+  if(!drivers.length) return `<div class="no-result">Nenhum driver com no-show</div>`;
+  return `<table class="data-table">
+    <thead><tr><th>#</th><th>Motorista</th><th>Modal</th><th>No-Show</th><th>Nível de risco</th><th>Clusters</th></tr></thead>
+    <tbody>${drivers.map((d,i)=>{
+      const pct=(d.noshow/maxNS*100).toFixed(0);
+      const risk=d.noshow>=5?['b-err','Alto']:d.noshow>=3?['b-sub','Médio']:['b-am','Baixo'];
+      const rc=d.noshow>=5?'risk-alto':d.noshow>=3?'risk-medio':'';
+      return`<tr class="${rc}">
+        <td style="color:#aaa;font-size:12px">${i+1}</td>
+        <td style="font-weight:600">${d.name}</td>
+        <td>${modalBadge(d.modal)}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;background:#f0f0f0;border-radius:99px;height:10px;min-width:60px;overflow:hidden">
+              <div style="width:${pct}%;height:100%;border-radius:99px;background:${d.noshow>=5?'#f44336':d.noshow>=3?'#ff9800':'#ffc107'}"></div>
+            </div>
+            <span style="font-weight:700;font-size:14px">${d.noshow}</span>
+          </div>
+        </td>
+        <td><span class="badge ${risk[0]}">${risk[1]}</span></td>
+        <td style="font-size:11px;color:#888;max-width:200px">${d.cluster}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function filterNS(){
+  const q = nrm(document.getElementById('ns-search').value);
+  const maxNS = nsAllDrivers[0]?.noshow||1;
+  const filtered = q
+    ? nsAllDrivers.filter(d=>d.noshow>0&&(nrm(d.name).includes(q)||nrm(d.modal).includes(q)))
+    : nsAllDrivers.filter(d=>d.noshow>0);
+  const wrap = document.getElementById('ns-table-wrap');
+  if(wrap) wrap.innerHTML = renderNSTable(filtered, maxNS);
+}
+
+// ── DISPONIBILIDADE KPI ───────────────────────────────────────────
+let dispView = 'geral'; // 'geral' | 'am' | 'sd'
+
+function renderDisponibilidade(){
+  const container = document.getElementById('disp-content'); if(!container) return;
+  if(!dispData.length){ container.innerHTML='<div class="no-result">Importe a disponibilidade primeiro</div>'; return; }
+
+  const keys = Object.keys(dispData[0]||{});
+  const todayCol = keys[5]||null;
+
+  const drivers = dispData.map(d=>({cluster: String(d['Cluster']||''),
+    name: String(d['Driver Name']||''),
+    modal: String(d['Vehicle Type']||'').toUpperCase().replace('PASSAIO','PASSEIO'),
+    turno: parseTurno(String(d[todayCol]||'')),
+    noshow: Number(d['No Show Time']||0)
+  }));
+
+  const modals = ['MOTO','FIORINO','PASSEIO','VAN'];
+  const colors = {MOTO:'#9e9e9e',FIORINO:'#7c4dff',PASSEIO:'#009688',VAN:'#e91e63'};
+
+  function getFiltered(view){
+    if(view==='am')  return drivers.filter(d=>d.turno==='AM'||d.turno==='AMBOS');
+    if(view==='sd')  return drivers.filter(d=>d.turno==='SD'||d.turno==='AMBOS');
+    return drivers.filter(d=>d.turno!==null); // geral = todos confirmados
+  }
+
+  function buildView(view){
+    const list = getFiltered(view);
+    const total = list.length;
+
+    // Summary cards
+    const byModal = {};
+    modals.forEach(m=>{ byModal[m] = list.filter(d=>d.modal===m).length; });
+    const amOnly  = drivers.filter(d=>d.turno==='AM').length;
+    const sdOnly  = drivers.filter(d=>d.turno==='SD').length;
+    const ambos   = drivers.filter(d=>d.turno==='AMBOS').length;
+    const pending = drivers.filter(d=>d.turno===null).length;
+
+    let html = `
+      <div class="disp-toggle">
+        <button class="${view==='geral'?'active':''}" onclick="dispView='geral';renderDisponibilidade()">Geral</button>
+        <button class="${view==='am'?'active':''}" onclick="dispView='am';renderDisponibilidade()">AM</button>
+        <button class="${view==='sd'?'active':''}" onclick="dispView='sd';renderDisponibilidade()">SD</button>
+      </div>
+    `;
+
+    // Top summary
+    html += `<div class="kpi-grid" style="margin-bottom:1.5rem">`;
+    if(view==='geral'){
+      html += `
+        <div class="kpi-card"><div class="kpi-num" style="color:#1a1a1a">${total}</div><div class="kpi-label">Disponíveis hoje</div></div>
+        <div class="kpi-card"><div class="kpi-num" style="color:#FAC775">${amOnly}</div><div class="kpi-label">Só AM</div></div>
+        <div class="kpi-card"><div class="kpi-num" style="color:#0C447C">${sdOnly}</div><div class="kpi-label">Só SD</div></div>
+        <div class="kpi-card"><div class="kpi-num" style="color:#27500A">${ambos}</div><div class="kpi-label">AM + SD</div></div>
+        <div class="kpi-card"><div class="kpi-num" style="color:#aaa">${pending}</div><div class="kpi-label">Pendentes</div></div>
+      `;
+    } else {
+      const {amStart,sdStart}=getHorarios();
+    const label = view==='am'?`AM (${amStart})`:`SD / PM1 (${sdStart})`;
+      html += `<div class="kpi-card"><div class="kpi-num" style="color:#1a1a1a">${total}</div><div class="kpi-label">Disponíveis ${label}</div></div>`;
+      modals.forEach(m=>{
+        html += `<div class="kpi-card"><div class="kpi-num" style="color:${colors[m]}">${byModal[m]}</div><div class="kpi-label">${m}</div></div>`;
+      });
+    }
+    html += `</div>`;
+
+    // Bar chart por modal
+    html += `<div class="section-sub">Disponíveis por modal${view!=='geral'?' — '+view.toUpperCase():''}</div>`;
+    const maxM = Math.max(...modals.map(m=>byModal[m]),1);
+    html += `<div style="margin-bottom:1.5rem">`;
+    modals.forEach(m=>{
+      const pct = (byModal[m]/maxM*100).toFixed(0);
+      html += `<div class="bar-row">
+        <div class="bar-label">${modalBadge(m)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${colors[m]}"></div></div>
+        <div class="bar-val" style="color:${colors[m]}">${byModal[m]}</div>
+      </div>`;
+    });
+    html += `</div>`;
+
+    // Table por modal
+    modals.forEach(m=>{
+      const mDrivers = list.filter(d=>d.modal===m);
+      if(!mDrivers.length) return;
+      html += `
+        <div class="modal-section">
+          <div class="modal-header">
+            ${modalBadge(m)}
+            <span class="modal-title">${mDrivers.length} drivers disponíveis</span>
+          </div>
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Motorista</th><th>Turno</th><th>No-Show</th><th>Clusters</th></tr></thead>
+            <tbody>${mDrivers.sort((a,b)=>a.noshow-b.noshow).map(d=>`<tr>
+              <td style="font-weight:600">${d.name}</td>
+              <td>${turnoBadge(d.turno==='AMBOS'?'AMBOS':d.turno)}</td>
+              <td><span style="font-weight:700;color:${d.noshow>=5?'#f44336':d.noshow>=3?'#ff9800':d.noshow>=1?'#ffc107':'#4caf50'}">${d.noshow}</span></td>
+              <td style="font-size:11px;color:#888;max-width:200px">${d.cluster||'-'}</td>
+            </tr>`).join('')}</tbody>
+          </table></div>
+        </div>`;
+    });
+
+    return html;
+  }
+
+  container.innerHTML = buildView(dispView);
+}
+
+// ── EXPORTAR XLSX ─────────────────────────────────────────────────
+function exportarTudo(){
+  const wb = XLSX.utils.book_new();
+  const today = new Date().toLocaleDateString('pt-BR');
+
+  // ── ABA 1: Escala sugerida
+  if(allRows.length){
+    const escalaData = allRows.map(r=>({
+      'Turno': String(r.turno||''),
+      'Rota': String(r.rota||''),
+      'Gaiola': String(r.letra||''),
+      'AT': String(r.at||''),
+      'ID Driver': String(r.driverId||''),
+      'Cluster': String(r.cluster||''),
+      'Volume (L)': parseVol(r.volume)||0,
+      'Modal pedido': String(r.modalPedido||''),
+      'Motorista sugerido': String(r.driver||''),
+      'Modal alocado': String(r.allocModal||''),
+      'Status': r.status==='plotado'?'Plotado':
+                r.status==='ok'?'OK':
+                r.status==='volume'?'Volume':
+                r.status==='substituido'?'VAN-Fiorino':
+                'Sem motorista'
+    }));
+    const ws1 = XLSX.utils.json_to_sheet(escalaData);
+    styleSheet(ws1, escalaData.length);
+    XLSX.utils.book_append_sheet(wb, ws1, 'Escala');
+  }
+
+  // ── ABA 2: Disponíveis livres
+  if(livresData.length){
+    const livresExp = livresData.map(d=>({
+      'Motorista': d.name,
+      'Modal': d.modal,
+      'Turno disponível': d.turno,
+      'Vezes rodou (3d)': vezesRodou(d.nameNorm),
+      'Clusters': d.cluster,
+      'No-Show': d.noShow
+    }));
+    const ws2 = XLSX.utils.json_to_sheet(livresExp);
+    styleSheet(ws2, livresExp.length);
+    XLSX.utils.book_append_sheet(wb, ws2, 'Disponíveis Livres');
+  }
+
+  // ── ABA 3: Penalizados
+  const penList = getPenalizados();
+  if(penList.length){
+    const penDrivers = dispData.filter(d=>penList.includes(nrm(String(d['Driver Name']||''))));
+    const penExp = penDrivers.map(d=>({
+      'Motorista': String(d['Driver Name']||''),
+      'Modal': String(d['Vehicle Type']||''),
+      'No-Show': Number(d['No Show Time']||0),
+      'Clusters': String(d['Cluster']||'')
+    }));
+    const penExp2 = penExp || [];
+    if(penExp2.length){
+      const ws3 = XLSX.utils.json_to_sheet(penExp2);
+      styleSheet(ws3, penExp.length);
+      XLSX.utils.book_append_sheet(wb, ws3, 'Penalizados');
+    } else if(penList.length){
+      const ws3b = XLSX.utils.json_to_sheet([{Motorista:'Nenhum driver penalizado encontrado na disponibilidade'}]);
+      XLSX.utils.book_append_sheet(wb, ws3b, 'Penalizados');
+    }
+  }
+
+  // ── ABA 4: Rodízio histórico
+  const rodizio = getRodizio();
+  if(rodizio.length){
+    const map={};
+    rodizio.forEach(r=>{
+      const k=nrm(r.name);
+      if(!map[k]) map[k]={name:r.name,modal:r.modal,dates:[],turnos:[]};
+      if(!map[k].dates.includes(r.date)) map[k].dates.push(r.date);
+      map[k].turnos.push(r.turno);
+    });
+    const rodExp = Object.values(map).sort((a,b)=>b.dates.length-a.dates.length).map(r=>({
+      'Motorista': r.name,
+      'Modal': r.modal,
+      'Vezes rodou': r.dates.length,
+      'Últimas datas': r.dates.slice(-5).join(', '),
+      'Turnos': [...new Set(r.turnos)].join(', ')
+    }));
+    const ws4 = XLSX.utils.json_to_sheet(rodExp);
+    styleSheet(ws4, rodExp.length);
+    XLSX.utils.book_append_sheet(wb, ws4, 'Rodízio');
+  }
+
+  // ── ABA 5: No-Show KPI
+  if(dispData.length){
+    const keys = Object.keys(dispData[0]||{});
+    const todayCol = keys[5]||null;
+    const nsData = dispData.map(d=>({
+      'Motorista': d['Driver Name'],
+      'Modal': d['Vehicle Type'],
+      'No-Show': Number(d['No Show Time']||0),
+      'Turno hoje': parseTurno(String(d[todayCol]||''))||'Pendente/Indisponível',
+      'Clusters': d['Cluster'],
+      'Risco': Number(d['No Show Time']||0)>=5?'Alto':
+               Number(d['No Show Time']||0)>=3?'Médio':
+               Number(d['No Show Time']||0)>=1?'Baixo':'Sem no-show'
+    })).sort((a,b)=>b['No-Show']-a['No-Show']);
+    const ws5 = XLSX.utils.json_to_sheet(nsData);
+    styleSheet(ws5, nsData.length);
+    XLSX.utils.book_append_sheet(wb, ws5, 'No-Show KPI');
+  }
+
+  // ── ABA 6: Alertas
+  if(alertas.length){
+    const alertExp = alertas.map(a=>({
+      'Rota': a.rota,
+      'Cluster': a.cluster,
+      'Modal pedido': a.modal,
+      'Alerta': a.msg
+    }));
+    const ws6 = XLSX.utils.json_to_sheet(alertExp);
+    styleSheet(ws6, alertExp.length);
+    XLSX.utils.book_append_sheet(wb, ws6, 'Alertas');
+  }
+
+  // ── ABA 7: Driver Day
+  const semRows = alertas.filter(a=>a.msg&&a.msg.includes('Sem motorista'));
+  if(semRows.length){
+    const grp={};
+    semRows.forEach(a=>{
+      const k=(a.cluster||'')+'||'+(a.modal||'');
+      if(!grp[k]) grp[k]={cluster:a.cluster,modal:a.modal,rotas:[],count:0};
+      grp[k].rotas.push(a.rota); grp[k].count++;
+    });
+    const ddExp=Object.values(grp).sort((a,b)=>b.count-a.count).map(g=>({
+      'Cluster / Região': String(g.cluster||''),
+      'Modal necessário': String(g.modal||''),
+      'Qtd rotas': g.count,
+      'Rotas': g.rotas.join(', '),
+      'Observação': 'Realizar Driver Day em '+g.cluster+' com '+g.modal
+    }));
+    const ws7=XLSX.utils.json_to_sheet(ddExp);
+    styleSheet(ws7,ddExp.length);
+    XLSX.utils.book_append_sheet(wb,ws7,'Driver Day');
+  }
+
+  // Download
+  const dateStr = today.replace(/\//g,'-');
+  XLSX.writeFile(wb, `Escala_Shopee_${dateStr}.xlsx`);
+}
+
+function styleSheet(ws, rowCount){
+  // Auto column width
+  const range = XLSX.utils.decode_range(ws['!ref']||'A1');
+  const cols = [];
+  for(let C=range.s.c; C<=range.e.c; C++){
+    let max=10;
+    for(let R=range.s.r; R<=range.e.r; R++){
+      const cell = ws[XLSX.utils.encode_cell({r:R,c:C})];
+      if(cell&&cell.v) max=Math.max(max, String(cell.v).length+2);
+    }
+    cols.push({wch:Math.min(max,50)});
+  }
+  ws['!cols']=cols;
+}
+
+
+// ── DEBUG ─────────────────────────────────────────────────────────
+function debugDisp(){
+  const out = document.getElementById('debug-output');
+  out.style.display = 'block';
+  let log = '';
+
+  if(!dispData.length){ out.textContent = '❌ Nenhum dado de disponibilidade carregado!'; return; }
+
+  const keys = Object.keys(dispData[0]);
+  const todayCol = keys[5]||null;
+  log += 'Total linhas: ' + dispData.length + '\n';
+  log += 'Coluna do dia (indice 5): "' + todayCol + '"\n\n';
+
+  log += 'Valores RAW (primeiros 5):\n';
+  dispData.slice(0,5).forEach(function(d,i){
+    const raw = d[todayCol];
+    log += '  [' + i + '] tipo:' + typeof raw + ' valor:' + JSON.stringify(raw) + '\n';
+  });
+  log += '\n';
+
+  const vals = dispData.map(function(d){ return String(d[todayCol]||''); });
+  const uniq = vals.filter(function(v,i){ return vals.indexOf(v)===i; });
+  log += 'Valores unicos (' + uniq.length + '):\n';
+  uniq.forEach(function(v){
+    const t = parseTurno(v);
+    log += '  ' + JSON.stringify(v).slice(0,70) + ' -> ' + (t||'NULL') + '\n';
+  });
+  log += '\n';
+
+  const h = getHorarios();
+  log += 'Horarios configurados: AM=' + h.amStart + ' SD=' + h.sdStart + '\n\n';
+
+  let am=0,sd=0,both=0,none=0;
+  dispData.forEach(function(d){
+    const t = parseTurno(String(d[todayCol]||''));
+    if(t==='AM') am++;
+    else if(t==='SD') sd++;
+    else if(t==='AMBOS') both++;
+    else none++;
+  });
+  log += 'AM: ' + am + ' | SD: ' + sd + ' | AM+SD: ' + both + ' | NULL: ' + none + '\n';
+  log += 'Total disponiveis: ' + (am+sd+both) + ' de ' + dispData.length + '\n';
+
+  if(escData.length){
+    const ciclos = [...new Set(escData.map(function(r){ return r.turno; }))];
+    const turnoSel = document.querySelector('input[name="turno"]:checked').value;
+    const filtered = escData.filter(function(r){
+      const c=nrm(r.turno);
+      if(turnoSel==='AMBOS') return true;
+      if(turnoSel==='AM') return c==='am';
+      if(turnoSel==='SD') return c==='pm1'||c==='sd';
+      return true;
+    });
+    log += '\nRotas carregadas: ' + escData.length + '\n';
+    log += 'Ciclos: ' + ciclos.join(', ') + '\n';
+    log += 'Turno selecionado: ' + turnoSel + '\n';
+    log += 'Rotas no turno: ' + filtered.length + '\n';
+  }
+
+  // Test actual allocation for first 3 routes
+  if(escData.length && dispData.length){
+    const turnoSel = document.querySelector('input[name="turno"]:checked').value;
+    const plotados = getPlotados();
+    const penalizados = getPenalizados();
+    const keys2 = Object.keys(dispData[0]);
+    const todayCol2 = keys2[5]||null;
+
+    // Build available exactly like runEscala
+    const _avail = dispData.map(function(d){
+      const turno = parseTurno(String(d[todayCol2]||''));
+      if(!turno) return null;
+      const fit=(turnoSel==='AM'&&(turno==='AM'||turno==='AMBOS'))||
+                (turnoSel==='SD'&&(turno==='SD'||turno==='AMBOS'))||
+                (turnoSel==='AMBOS');
+      if(!fit) return null;
+      return{
+        name:String(d['Driver Name']||''),
+        nameNorm:nrm(d['Driver Name']||''),
+        cluster:String(d['Cluster']||''),
+        modal:String(d['Vehicle Type']||'').toUpperCase().replace('PASSAIO','PASSEIO'),
+        turno, noShow:Number(d['No Show Time']||0),
+        id:String(d['Driver ID']||'')
+      };
+    }).filter(function(d){ return d && !penalizados.includes(d.nameNorm); });
+
+    log += '\n--- ALOCACAO DEBUG ---\n';
+    log += 'Drivers no turno (' + turnoSel + '): ' + _avail.length + '\n';
+    log += 'Modais: MOTO=' + _avail.filter(function(d){return d.modal==='MOTO';}).length;
+    log += ' PASSEIO=' + _avail.filter(function(d){return d.modal==='PASSEIO';}).length;
+    log += ' FIORINO=' + _avail.filter(function(d){return d.modal==='FIORINO';}).length + '\n\n';
+
+    // Test first 3 routes
+    const rotasFilt = escData.filter(function(r){
+      const c=nrm(r.turno);
+      if(turnoSel==='AM') return c==='am';
+      if(turnoSel==='SD') return c==='pm1'||c==='sd';
+      return true;
+    });
+
+    rotasFilt.slice(0,3).forEach(function(rota){
+      const rCluster = rota.cluster;
+      const rModal = rota.modal;
+      const modalOrder = getModalOrder(rota.volume, rModal);
+      log += 'Rota ' + rota.rota + ' | cluster:"' + rCluster + '" | modal:' + rModal + '\n';
+      log += '  modalOrder: ' + modalOrder.join(',') + '\n';
+
+      modalOrder.forEach(function(m){
+        const cands = _avail.filter(function(d){
+          return d.modal===m && driverFitCluster(d.cluster, rCluster);
+        });
+        log += '  Modal ' + m + ': ' + cands.length + ' candidatos';
+        if(cands.length > 0) log += ' (1o: ' + cands[0].name + ')';
+        else {
+          // Why no match? Check cluster
+          const modalMatch = _avail.filter(function(d){ return d.modal===m; });
+          log += ' [' + modalMatch.length + ' com modal, 0 com cluster]';
+          if(modalMatch.length > 0){
+            log += '\n    Ex driver cluster: "' + modalMatch[0].cluster.slice(0,60) + '"';
+            log += '\n    Rota cluster: "' + rCluster + '"';
+            // Test fit
+            const fit = driverFitCluster(modalMatch[0].cluster, rCluster);
+            log += '\n    fit_cluster result: ' + fit;
+          }
+        }
+        log += '\n';
+      });
+    });
+  }
+
+  // Debug plotados
+  const plotados = getPlotados();
+  log += '\n--- PLOTADOS DEBUG ---\n';
+  log += 'Total plotados: ' + plotados.length + '\n';
+  // Show all plotados nameNorm
+  plotados.forEach(function(p,i){
+    log += '  ['+i+'] '+JSON.stringify(p.nameNorm)+'\n';
+  });
+  if(plotados.length && dispData.length){
+    const keys2 = Object.keys(dispData[0]);
+    const todayCol2 = keys2[5]||null;
+    let matched=0, notFound=[];
+    dispData.forEach(function(d){
+      const dn = nrm(String(d['Driver Name']||''));
+      if(plotados.some(function(p){ return p.nameNorm===dn; })) matched++;
+    });
+    plotados.forEach(function(p){
+      const found = dispData.some(function(d){ return nrm(String(d['Driver Name']||''))===p.nameNorm; });
+      if(!found) notFound.push(p.nameNorm);
+    });
+    log += 'Encontrados na disponibilidade: ' + matched + '/' + plotados.length + '\n';
+    if(notFound.length){
+      log += 'NAO encontrados:\n';
+      notFound.forEach(function(n){ log += '  '+JSON.stringify(n)+'\n'; });
+    }
+  }
+
+  out.textContent = log;
+}
+
+
+
+// ── SUPABASE HELPERS ─────────────────────────────────────────────
+const SB_URL = 'https://tslhvfvwhybaqhkwbgyl.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzbGh2ZnZ3aHliYXFoa3diZ3lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NjcwMzgsImV4cCI6MjA5NTM0MzAzOH0.pHUeMP1XDDdchCLA1aklnWUEowO_IJaT2svvR8wajH4';
+const SB_HEADERS = {
+  'apikey': SB_KEY,
+  'Authorization': 'Bearer ' + SB_KEY,
+  'Content-Type': 'application/json',
+  'Accept': 'application/json'
+};
+
+async function sbFetch(table, params){
+  const r = await fetch(SB_URL + '/rest/v1/' + table + '?' + params, {headers: SB_HEADERS});
+  if(!r.ok) throw new Error('sbFetch ' + r.status);
+  return await r.json();
+}
+
+async function sbPost(table, body){
+  const r = await fetch(SB_URL + '/rest/v1/' + table, {
+    method: 'POST',
+    headers: {...SB_HEADERS, 'Prefer': 'resolution=merge-duplicates'},
+    body: JSON.stringify(body)
+  });
+  return r.ok;
+}
+
+async function sbDelete(table, params){
+  const r = await fetch(SB_URL + '/rest/v1/' + table + '?' + params, {
+    method: 'DELETE', headers: SB_HEADERS
+  });
+  return r.ok;
+}
+
+// ── SUPABASE + HUB AUTH ───────────────────────────────────────────
+const SUPABASE_URL = 'https://tslhvfvwhybaqhkwbgyl.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzbGh2ZnZ3aHliYXFoa3diZ3lsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NjcwMzgsImV4cCI6MjA5NTM0MzAzOH0.pHUeMP1XDDdchCLA1aklnWUEowO_IJaT2svvR8wajH4';
+let _sbClient = null;
+let currentHub = null;
+
+function getSB(){
+  if(!_sbClient){
+    try{
+      _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }catch(e){
+      console.error('Supabase init error:', e);
+      return null;
+    }
+  }
+  return _sbClient;
+}
+
+async function sha256(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function doLogin(){
+  const hubCode = document.getElementById('login-hub').value;
+  const senha = document.getElementById('login-senha').value;
+  const erro = document.getElementById('login-erro');
+  erro.style.display = 'none';
+
+  if(!hubCode){ erro.style.display='block'; erro.textContent='Selecione seu hub.'; return; }
+  if(!senha){ erro.style.display='block'; erro.textContent='Digite a senha.'; return; }
+
+  try{
+    const inputHash = await sha256(senha);
+    const resp = await fetch(SB_URL + '/rest/v1/hubs?select=hub_code,hub_name,password_hash&hub_code=eq.' + hubCode, {headers: SB_HEADERS});
+    if(!resp.ok){ erro.style.display='block'; erro.textContent='Erro HTTP: ' + resp.status; return; }
+    const data = await resp.json();
+    if(!data || !data.length){ erro.style.display='block'; erro.textContent='Hub não encontrado: ' + hubCode; return; }
+    if(inputHash !== data[0].password_hash){ erro.style.display='block'; erro.textContent='Senha incorreta.'; return; }
+
+    currentHub = {hub_code: data[0].hub_code, hub_name: data[0].hub_name};
+    sessionStorage.setItem('hub', JSON.stringify(currentHub));
+    showApp();
+    await loadHubData();
+  }catch(e){
+    erro.style.display='block'; erro.textContent='Erro: ' + e.message;
+  }
+}
+
+function showApp(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.querySelector('.sidebar').style.display = 'flex';
+  document.querySelector('.main-wrap').style.display = 'flex';
+  const hubEl = document.getElementById('topbar-hub');
+  if(hubEl && currentHub) hubEl.textContent = currentHub.hub_name;
+  initDefaultDates();
+}
+
+async function loadHubData(){
+  if(!currentHub) return;
+  try{
+    const rod = await sbFetch('rodizio', 'select=*&hub_code=eq.' + encodeURIComponent(currentHub.hub_code));
+    if(rod && rod.length){
+      const local = rod.map(r=>({name:r.driver_name, modal:r.driver_modal||'', turno:r.turno, date:r.ride_date}));
+      saveRodizio(local);
+      if(typeof renderRodizio === 'function') renderRodizio();
+    }
+    const plt = await sbFetch('plotados', 'select=*&hub_code=eq.' + encodeURIComponent(currentHub.hub_code));
+    if(plt && plt.length){
+      document.getElementById('bulk-plotados').value = plt.map(p=>p.driver_name).join('\n');
+    }
+    const pen = await sbFetch('penalizados', 'select=*&hub_code=eq.' + encodeURIComponent(currentHub.hub_code));
+    if(pen && pen.length){
+      document.getElementById('bulk-penalizados').value = pen.map(p=>p.driver_name).join('\n');
+    }
+    // Load no-show history
+    await loadNoshowHist();
+  }catch(e){ console.error('loadHubData:', e); }
+}
+
+async function syncRodizioToHub(drivers, turno){
+  if(!currentHub) return;
+  const today = new Date().toLocaleDateString('pt-BR');
+  const rows = drivers.map(d=>({
+    hub_code: currentHub.hub_code, driver_name: d.name,
+    driver_modal: d.modal||'', turno: turno, ride_date: today
+  }));
+  if(rows.length) await sbPost('rodizio', rows);
+}
+
+async function savePlotadosToHub(){
+  if(!currentHub){ alert('Faça login primeiro.'); return; }
+  const names = (document.getElementById('bulk-plotados').value||'').split(/\r?\n/).map(n=>n.trim()).filter(n=>n);
+  await sbDelete('plotados', 'hub_code=eq.' + encodeURIComponent(currentHub.hub_code));
+  if(names.length) await sbPost('plotados', names.map(n=>({hub_code:currentHub.hub_code,driver_name:n,driver_modal:''})));
+  alert('Plotados salvos no hub!');
+}
+
+async function savePenalizadosToHub(){
+  if(!currentHub){ alert('Faça login primeiro.'); return; }
+  const names = (document.getElementById('bulk-penalizados').value||'').split(/\r?\n/).map(n=>n.trim()).filter(n=>n);
+  await sbDelete('penalizados', 'hub_code=eq.' + encodeURIComponent(currentHub.hub_code));
+  if(names.length) await sbPost('penalizados', names.map(n=>({hub_code:currentHub.hub_code,driver_name:n})));
+  alert('Penalizados salvos no hub!');
+}
+
+function doLogout(){
+  if(confirm('Deseja sair?')){
+    sessionStorage.removeItem('hub');
+    currentHub = null;
+    location.reload();
+  }
+}
+
+// Auto-login se sessão existir (após página carregar)
+window.addEventListener('load', function(){
+  const stored = sessionStorage.getItem('hub');
+  if(stored){
+    try{
+      currentHub = JSON.parse(stored);
+      showApp();
+      loadHubData();
+    }catch(e){ sessionStorage.removeItem('hub'); }
+  }
+});
+
+// ── REVERSÃO / NO-SHOW ────────────────────────────────────────────
+let reversaoRows = [];
+
+function switchRevTab(id, btn){
+  document.querySelectorAll('#page-reversao .tab-body').forEach(t=>t.style.display='none');
+  document.querySelectorAll('#page-reversao .sp-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).style.display='block';
+  btn.classList.add('active');
+}
+
+function gerarReversao(){
+  if(!escData.length){ alert('Importe a roteirização primeiro.'); return; }
+  if(!dispData.length){ alert('Importe a disponibilidade primeiro.'); return; }
+
+  const input = document.getElementById('noshow-input').value||'';
+  const turnoRev = document.querySelector('input[name="turno-rev"]:checked').value;
+  const tokens = input.replace(/[\r]/g,'').split(/[,;\n]+/).map(t=>t.trim().toUpperCase()).filter(t=>t);
+  if(!tokens.length){ alert('Cole pelo menos uma gaiola ou AT.'); return; }
+
+  // Find matching routes
+  const rotasNoshow = escData.filter(r=>{
+    const g=(r.letra||'').toUpperCase();
+    const at=(r.at||'').toUpperCase();
+    return tokens.some(t=>t===g||t===at);
+  });
+
+  if(!rotasNoshow.length){
+    alert('Nenhuma rota encontrada. Verifique as gaiolas/ATs e a roteirização importada.');
+    return;
+  }
+
+  // Build available pool - drivers not yet used today
+  const escaladosHoje = getEscaladosHoje();
+  const keys = Object.keys(dispData[0]||{});
+  const todayCol = keys[5]||null;
+  const penalizados = getPenalizados();
+
+  // Drivers já escalados na escala principal (não podem ser re-escalados)
+  const jaEscalados = new Set(
+    allRows.filter(r=>r.status!=='sem_driver').map(r=>nrm(r.driver))
+  );
+
+  const available = dispData.map(d=>{
+    const turno = parseTurno(String(d[todayCol]||''));
+    if(!turno) return null;
+    const fit=(turnoRev==='AM'&&(turno==='AM'||turno==='AMBOS'))||
+              (turnoRev==='SD'&&(turno==='SD'||turno==='AMBOS'));
+    if(!fit) return null;
+    if(penalizados.includes(nrm(d['Driver Name']||''))) return null;
+    // Excluir quem já está na escala principal
+    if(jaEscalados.has(nrm(d['Driver Name']||''))) return null;
+    return{
+      name:String(d['Driver Name']||''),
+      nameNorm:nrm(d['Driver Name']||''),
+      id:String(d['Driver ID']||''),
+      cluster:String(d['Cluster']||''),
+      modal:String(d['Vehicle Type']||'').toUpperCase().replace('PASSAIO','PASSEIO'),
+      noShow:Number(d['No Show Time']||0),
+      turno
+    };
+  }).filter(d=>d);
+
+  // Allocate
+  reversaoRows = [];
+  const usedRev = new Set();
+
+  rotasNoshow.forEach(rota=>{
+    const rCluster = rota.cluster;
+    const modalOrder = getModalOrder(rota.volume, rota.modal||'', rota.g||0, rota.gg||0);
+    const modalPedido = modalOrder[0];
+    let chosen=null, allocModal='', status='';
+    const volFlag = parseVol(rota.volume)>800;
+
+    for(const tryModal of modalOrder){
+      const cands = available.filter(d=>
+        !usedRev.has(d.nameNorm)&&
+        d.modal===tryModal&&
+        driverFitCluster(d.cluster, rCluster)
+      ).sort((a,b)=>a.noShow-b.noShow);
+      if(cands.length){ chosen=cands[0]; allocModal=tryModal; status=tryModal===modalPedido?'ok':'substituido'; break; }
+    }
+    if(!chosen) status='sem_driver';
+    if(chosen) usedRev.add(chosen.nameNorm);
+
+    reversaoRows.push({
+      turno:rota.turno, rota:rota.rota, letra:rota.letra,
+      cluster:rCluster, volume:rota.volume,
+      g:rota.g||0, gg:rota.gg||0,
+      modalPedido, driver:chosen?chosen.name:'— sem motorista —',
+      driverId:chosen?chosen.id:'',
+      allocModal, status, driverObj:chosen, at:rota.at||''
+    });
+  });
+
+  // Auto-populate no-show history with original drivers from allRows
+  const today = new Date().toLocaleDateString('pt-BR');
+  const hist = getNoshowHistLocal();
+  tokens.forEach(token=>{
+    const rota = escData.find(r=>{
+      const g=(r.letra||'').toUpperCase(), at=(r.at||'').toUpperCase();
+      return token===g||token===at;
+    });
+    const original = allRows.find(e=>{
+      const g=(e.letra||'').toUpperCase(), at=(e.at||'').toUpperCase();
+      return token===g||token===at;
+    });
+    const driverName = original && original.driver && !original.driver.includes('sem motorista')
+      ? original.driver : 'Não identificado';
+    const alreadyExists = hist.some(h=>h.gaiola===(rota?rota.letra:token)&&h.noshow_date===today);
+    if(!alreadyExists){
+      hist.push({
+        driver_name: driverName,
+        rota: rota?rota.rota:token,
+        gaiola: rota?rota.letra:token,
+        at: rota?rota.at:'',
+        cluster: rota?rota.cluster:'',
+        turno: turnoRev,
+        noshow_date: today
+      });
+    }
+  });
+  saveNoshowHistLocal(hist);
+
+  renderReversao();
+  renderNoshowHist();
+  document.getElementById('reversao-results').style.display='block';
+}
+
+function renderReversao(){
+  const b=document.getElementById('tbody-reversao');
+  const total=reversaoRows.length;
+  const ok=reversaoRows.filter(r=>r.status==='ok').length;
+  const sub=reversaoRows.filter(r=>r.status==='substituido').length;
+  const sem=reversaoRows.filter(r=>r.status==='sem_driver').length;
+
+  document.getElementById('reversao-stats').innerHTML=
+    '<div class="stat-box"><div class="num">'+total+'</div><div class="lbl">Rotas</div></div>'+
+    '<div class="stat-box"><div class="num" style="color:var(--green)">'+ok+'</div><div class="lbl">Alocadas OK</div></div>'+
+    '<div class="stat-box"><div class="num" style="color:var(--orange)">'+sub+'</div><div class="lbl">Substituição</div></div>'+
+    '<div class="stat-box"><div class="num" style="color:var(--red)">'+sem+'</div><div class="lbl">Sem motorista</div></div>';
+
+  b.innerHTML=reversaoRows.map(function(r){
+    const sb=r.status==='ok'?'<span class="badge bsp-ok">OK</span>':
+             r.status==='substituido'?'<span class="badge bsp-sub">Substituição</span>':
+             '<span class="badge bsp-err">Sem motorista</span>';
+    const vol=parseVol(r.volume);
+    const volStr=vol>0?vol.toLocaleString('pt-BR')+'L':'-';
+    const ggStr=r.gg>0?'<span class="badge bsp-err">GG:'+r.gg+'</span>':r.g>0?'<span class="badge bsp-sub">G:'+r.g+'</span>':'-';
+    return'<tr class="'+(r.status==='sem_driver'?'err-row':'')+'">'+
+      '<td>'+turnoBadge(r.turno)+'</td>'+
+      '<td style="font-weight:500">'+r.rota+'</td>'+
+      '<td style="color:var(--muted);font-size:12px">'+r.letra+'</td>'+
+      '<td style="font-size:11px;color:var(--muted)">'+( r.at||'-')+'</td>'+
+      '<td style="font-size:12px">'+r.cluster+'</td>'+
+      '<td style="font-size:12px">'+volStr+'</td>'+
+      '<td>'+ggStr+'</td>'+
+      '<td>'+modalBadge(r.modalPedido)+'</td>'+
+      '<td style="font-weight:500">'+r.driver+'</td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+( r.driverId||'-')+'</td>'+
+      '<td>'+(r.allocModal?modalBadge(r.allocModal):'-')+'</td>'+
+      '<td>'+sb+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+// No-show history — local storage
+function getNoshowHistLocal(){
+  try{ return JSON.parse(localStorage.getItem('shopee_noshow_'+((currentHub&&currentHub.hub_code)||'local'))||'[]'); }
+  catch(e){ return []; }
+}
+function saveNoshowHistLocal(list){
+  try{ localStorage.setItem('shopee_noshow_'+((currentHub&&currentHub.hub_code)||'local'), JSON.stringify(list)); }catch(e){}
+}
+
+function renderNoshowHist(){
+  const hist = getNoshowHistLocal();
+  const b = document.getElementById('tbody-noshow-hist');
+  const ct = document.getElementById('noshow-count');
+  if(ct) ct.textContent = hist.length;
+  if(!b) return;
+  if(!hist.length){
+    b.innerHTML='<tr><td colspan="7" class="no-data">Nenhum no-show registrado ainda</td></tr>';
+    return;
+  }
+  b.innerHTML=[...hist].reverse().map(function(r){
+    return'<tr>'+
+      '<td style="font-weight:500;color:var(--red)">'+r.driver_name+'</td>'+
+      '<td style="font-size:12px">'+( r.rota||'-')+'</td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+( r.gaiola||'-')+'</td>'+
+      '<td style="font-size:11px;color:var(--muted)">'+( r.at||'-')+'</td>'+
+      '<td style="font-size:12px">'+( r.cluster||'-')+'</td>'+
+      '<td>'+turnoBadge(r.turno)+'</td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+r.noshow_date+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function limparNoshowHist(){
+  if(confirm('Limpar todo o histórico de no-show?')){
+    saveNoshowHistLocal([]);
+    renderNoshowHist();
+  }
+}
+
+async function salvarNoshow(){
+  if(!currentHub){ alert('Faça login primeiro.'); return; }
+  const hist = getNoshowHistLocal();
+  if(!hist.length){ alert('Nenhum no-show para salvar.'); return; }
+  const rows = hist.map(h=>({
+    hub_code: currentHub.hub_code,
+    driver_name: h.driver_name,
+    rota: h.rota||'',
+    gaiola: h.gaiola||'',
+    turno: h.turno,
+    noshow_date: h.noshow_date
+  }));
+  const ok = await sbPost('noshow', rows);
+  if(ok){ alert('No-show salvo no hub!'); }
+  else alert('Erro ao salvar. Tente novamente.');
+}
+
+async function loadNoshowHist(){
+  if(!currentHub) return;
+  try{
+    const data = await sbFetch('noshow','select=*&hub_code=eq.'+encodeURIComponent(currentHub.hub_code)+'&order=created_at.desc&limit=100');
+    if(data && data.length){
+      saveNoshowHistLocal(data.map(r=>({
+        driver_name:r.driver_name, rota:r.rota, gaiola:r.gaiola,
+        at:r.at||'', cluster:r.cluster||'', turno:r.turno, noshow_date:r.noshow_date
+      })));
+      renderNoshowHist();
+    }
+  }catch(e){ console.error('loadNoshowHist:', e); }
+}
+
+function exportarReversao(){
+  if(!reversaoRows.length){ alert('Gere a reversão primeiro.'); return; }
+  const wb = XLSX.utils.book_new();
+  const data = reversaoRows.map(r=>({
+    'Turno':r.turno,'Rota':r.rota,'Gaiola':r.letra,'AT':r.at||'',
+    'Cluster':r.cluster,'Volume':parseVol(r.volume)||'',
+    'G':r.g||0,'GG':r.gg||0,
+    'Modal pedido':r.modalPedido,
+    'Motorista sugerido':r.driver,'ID Driver':r.driverId||'',
+    'Modal alocado':r.allocModal||'','Status':r.status
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  styleSheet(ws, data.length);
+  XLSX.utils.book_append_sheet(wb, ws, 'Nova Escala');
+
+  const hist = getNoshowHistLocal();
+  if(hist.length){
+    const ws2 = XLSX.utils.json_to_sheet(hist.map(h=>({
+      'Driver (no-show)':h.driver_name,'Rota':h.rota,'Gaiola':h.gaiola,
+      'AT':h.at||'','Cluster':h.cluster||'','Turno':h.turno,'Data':h.noshow_date
+    })));
+    styleSheet(ws2, hist.length);
+    XLSX.utils.book_append_sheet(wb, ws2, 'No-Show');
+  }
+  XLSX.writeFile(wb, 'Reversao_'+new Date().toLocaleDateString('pt-BR').split('/').join('-')+'.xlsx');
+}
+
+// ── SALVAR ESCALA NO HISTÓRICO ────────────────────────────────────
+async function salvarEscalaHistorico(turnoSel){
+  if(!currentHub){ console.log('salvarEscala: sem login'); return; }
+  if(!allRows.length){ console.log('salvarEscala: allRows vazio'); return; }
+  console.log('Salvando escala...', turnoSel, allRows.length, 'rotas');
+  try{
+    const today = new Date().toLocaleDateString('pt-BR');
+    const escalaJson = JSON.stringify(allRows.map(r=>({
+      turno:r.turno, rota:r.rota, letra:r.letra, at:r.at||'',
+      cluster:r.cluster, volume:r.volume, g:r.g||0, gg:r.gg||0,
+      modalPedido:r.modalPedido, driver:r.driver, driverId:r.driverId||'',
+      allocModal:r.allocModal, status:r.status
+    })));
+    await sbPost('escalas', [{
+      hub_code: currentHub.hub_code,
+      turno: turnoSel,
+      data_escala: today,
+      total_rotas: allRows.length,
+      total_alocadas: allRows.filter(r=>r.status!=='sem_driver').length,
+      total_sem_motorista: allRows.filter(r=>r.status==='sem_driver').length,
+      escala_json: escalaJson
+    }]);
+  }catch(e){ console.error('salvarEscalaHistorico:', e); }
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────
+async function renderDashboard(){
+  const c = document.getElementById('dashboard-content');
+  if(!c) return;
+  if(!currentHub){ c.innerHTML='<div class="no-data">Faça login para ver o dashboard</div>'; return; }
+  c.innerHTML='<div class="no-data">Carregando...</div>';
+  
+  try{
+    const today = new Date().toLocaleDateString('pt-BR');
+    
+    // Load today's data
+    const [escalasHoje, noshowHoje, rodizioHoje] = await Promise.all([
+      sbFetch('escalas', 'select=*&hub_code=eq.'+encodeURIComponent(currentHub.hub_code)+'&data_escala=eq.'+encodeURIComponent(today)+'&order=created_at.desc'),
+      sbFetch('noshow', 'select=*&hub_code=eq.'+encodeURIComponent(currentHub.hub_code)+'&noshow_date=eq.'+encodeURIComponent(today)),
+      sbFetch('rodizio', 'select=*&hub_code=eq.'+encodeURIComponent(currentHub.hub_code)+'&ride_date=eq.'+encodeURIComponent(today))
+    ]);
+
+    const totalRotas = escalasHoje.reduce((s,e)=>s+e.total_rotas,0);
+    const totalAlocadas = escalasHoje.reduce((s,e)=>s+e.total_alocadas,0);
+    const totalSem = escalasHoje.reduce((s,e)=>s+e.total_sem_motorista,0);
+    const totalNS = noshowHoje.length;
+    const totalRodizio = rodizioHoje.length;
+
+    // Noshow recorrentes no mes
+    const mesAtual = new Date().toLocaleDateString('pt-BR',{month:'2-digit',year:'numeric'}).replace('/','.');
+    const noshowMes = await sbFetch('noshow','select=driver_name&hub_code=eq.'+encodeURIComponent(currentHub.hub_code));
+    const nsCounts = {};
+    noshowMes.forEach(r=>{ nsCounts[r.driver_name]=(nsCounts[r.driver_name]||0)+1; });
+    const recorrentes = Object.entries(nsCounts).filter(([,c])=>c>=3).sort((a,b)=>b[1]-a[1]);
+
+    c.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">
+        <div class="kpi-card k-accent"><div class="k-label">Rotas hoje</div><div class="k-val">${totalRotas}</div><div class="k-sub">${escalasHoje.length} escala(s) gerada(s)</div></div>
+        <div class="kpi-card k-green"><div class="k-label">Alocadas OK</div><div class="k-val" style="color:var(--green)">${totalAlocadas}</div><div class="k-sub">${totalRotas?Math.round(totalAlocadas/totalRotas*100):0}% de aproveitamento</div></div>
+        <div class="kpi-card k-red"><div class="k-label">Sem motorista</div><div class="k-val" style="color:var(--red)">${totalSem}</div><div class="k-sub">Rotas descobertas</div></div>
+        <div class="kpi-card k-orange"><div class="k-label">No-shows hoje</div><div class="k-val" style="color:var(--orange)">${totalNS}</div><div class="k-sub">Registros de hoje</div></div>
+        <div class="kpi-card"><div class="k-label">Drivers escalados</div><div class="k-val">${totalRodizio}</div><div class="k-sub">No rodízio de hoje</div></div>
+      </div>
+
+      ${escalasHoje.length ? `
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><div class="card-step"><i class="ti ti-calendar-event" style="font-size:12px"></i></div><span class="card-title">Escalas de hoje</span></div>
+        <div style="padding:0"><table class="data-table">
+          <thead><tr><th>Turno</th><th>Rotas</th><th>Alocadas</th><th>Sem motorista</th><th>Hora</th></tr></thead>
+          <tbody>${escalasHoje.map(e=>`<tr>
+            <td>${turnoBadge(e.turno)}</td>
+            <td style="font-weight:600">${e.total_rotas}</td>
+            <td style="color:var(--green);font-weight:600">${e.total_alocadas}</td>
+            <td style="color:${e.total_sem_motorista>0?'var(--red)':'var(--green)'};font-weight:600">${e.total_sem_motorista}</td>
+            <td style="font-size:12px;color:var(--muted)">${new Date(e.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>` : '<div class="card" style="padding:20px;text-align:center;color:var(--muted)">Nenhuma escala gerada hoje ainda</div>'}
+
+      ${recorrentes.length ? `
+      <div class="card">
+        <div class="card-header">
+          <div class="card-step" style="background:var(--red)"><i class="ti ti-alert-triangle" style="font-size:12px"></i></div>
+          <span class="card-title">⚠️ No-show recorrente (3+ vezes)</span>
+        </div>
+        <div style="padding:0"><table class="data-table">
+          <thead><tr><th>Driver</th><th>Ocorrências</th><th>Risco</th></tr></thead>
+          <tbody>${recorrentes.slice(0,10).map(([name,ct])=>`<tr>
+            <td style="font-weight:500;color:var(--red)">${name}</td>
+            <td><span style="font-weight:700;font-size:16px;color:${ct>=5?'var(--red)':'var(--orange)'}">${ct}x</span></td>
+            <td><span class="badge ${ct>=5?'bsp-err':'bsp-sub'}">${ct>=5?'Alto':'Médio'}</span></td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>` : ''}
+    `;
+  }catch(e){
+    c.innerHTML='<div class="no-data">Erro ao carregar dashboard: '+e.message+'</div>';
+  }
+}
+
+// ── HISTÓRICO DE ESCALAS ─────────────────────────────────────────
+async function buscarHistorico(){
+  const ini = document.getElementById('hist-data-ini').value;
+  const fim = document.getElementById('hist-data-fim').value;
+  const turno = document.getElementById('hist-turno').value;
+  const c = document.getElementById('historico-content');
+  
+  if(!ini || !fim){ alert('Selecione data inicial e final.'); return; }
+  if(!currentHub){ alert('Faça login primeiro.'); return; }
+  
+  c.innerHTML='<div class="no-data">Buscando...</div>';
+  
+  try{
+    // Convert dates to pt-BR format for comparison
+    const iniDate = new Date(ini+' 00:00:00');
+    const fimDate = new Date(fim+' 23:59:59');
+    
+    let params = 'select=*&hub_code=eq.'+encodeURIComponent(currentHub.hub_code)+'&order=created_at.desc&limit=100';
+    if(turno) params += '&turno=eq.'+turno;
+    
+    const data = await sbFetch('escalas', params);
+    
+    // Filter by date range (dates stored as pt-BR strings)
+    const filtered = data.filter(e=>{
+      const parts = e.data_escala.split('/');
+      if(parts.length !== 3) return false;
+      const d = new Date(parts[2]+'-'+parts[1]+'-'+parts[0]);
+      return d >= iniDate && d <= fimDate;
+    });
+    
+    if(!filtered.length){
+      c.innerHTML='<div class="no-data">Nenhuma escala encontrada no período</div>';
+      return;
+    }
+
+    let html = '';
+    filtered.forEach(e=>{
+      const escala = e.escala_json ? JSON.parse(e.escala_json) : [];
+      const hora = new Date(e.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      html += `
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header">
+            <div class="card-step"><i class="ti ti-calendar" style="font-size:11px"></i></div>
+            <span class="card-title">${e.data_escala} — ${turnoBadge(e.turno)}</span>
+            <span style="margin-left:12px;font-size:12px;color:var(--muted)">${hora}</span>
+            <div style="margin-left:auto;display:flex;gap:16px;font-size:13px">
+              <span style="color:var(--green)">✓ ${e.total_alocadas} alocadas</span>
+              ${e.total_sem_motorista>0?`<span style="color:var(--red)">✗ ${e.total_sem_motorista} sem motorista</span>`:''}
+              <span style="color:var(--muted)">${e.total_rotas} rotas</span>
+            </div>
+          </div>
+          ${escala.length ? `
+          <div style="padding:0">
+            <div class="table-wrap"><table class="data-table">
+              <thead><tr><th>Turno</th><th>Rota</th><th>Gaiola</th><th>AT</th><th>Cluster</th><th>Modal pedido</th><th>Motorista</th><th>Modal alocado</th><th>Status</th></tr></thead>
+              <tbody>${escala.slice(0,50).map(r=>`<tr class="${r.status==='sem_driver'?'err-row':''}">
+                <td>${turnoBadge(r.turno)}</td>
+                <td style="font-weight:500">${r.rota}</td>
+                <td style="font-size:12px;color:var(--muted)">${r.letra||'-'}</td>
+                <td style="font-size:11px;color:var(--muted)">${r.at||'-'}</td>
+                <td style="font-size:12px">${r.cluster}</td>
+                <td>${modalBadge(r.modalPedido)}</td>
+                <td style="font-weight:500">${r.driver}</td>
+                <td>${r.allocModal?modalBadge(r.allocModal):'-'}</td>
+                <td>${r.status==='sem_driver'?'<span class="badge bsp-err">Sem motorista</span>':r.status==='plotado'?'<span class="badge bsp-plotado">Plotado</span>':'<span class="badge bsp-ok">OK</span>'}</td>
+              </tr>`).join('')}
+              ${escala.length>50?`<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:12px">... mais ${escala.length-50} rotas</td></tr>`:''}
+              </tbody>
+            </table></div>
+          </div>` : '<div style="padding:14px;color:var(--muted);font-size:13px">Detalhes não disponíveis</div>'}
+        </div>`;
+    });
+    c.innerHTML = html;
+  }catch(e){
+    c.innerHTML='<div class="no-data">Erro: '+e.message+'</div>';
+  }
+}
+
+// ── RELATÓRIO MENSAL ─────────────────────────────────────────────
+let relatorioData = null;
+
+async function gerarRelatorio(){
+  const mes = document.getElementById('rel-mes').value;
+  if(!mes){ alert('Selecione o mês.'); return; }
+  if(!currentHub){ alert('Faça login primeiro.'); return; }
+
+  const c = document.getElementById('relatorio-content');
+  c.innerHTML='<div class="no-data">Gerando relatório...</div>';
+
+  try{
+    const [ano, mesNum] = mes.split('-');
+    const mesNome = new Date(ano+'-'+mesNum+'-01').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+    // Load escalas do mês
+    const escalasAll = await sbFetch('escalas','select=*&hub_code=eq.'+encodeURIComponent(currentHub.hub_code));
+    const escalasMes = escalasAll.filter(e=>{
+      const parts = (e.data_escala||'').split('/');
+      return parts.length===3 && parts[1]===mesNum && parts[2]===ano;
+    });
+
+    // Load noshow do mês
+    const noshowAll = await sbFetch('noshow','select=*&hub_code=eq.'+encodeURIComponent(currentHub.hub_code));
+    const noshowMes = noshowAll.filter(r=>{
+      const parts = (r.noshow_date||'').split('/');
+      return parts.length===3 && parts[1]===mesNum && parts[2]===ano;
+    });
+
+    // ── STATS GERAIS ──────────────────────────────────────────
+    const totalEscalas = escalasMes.length;
+    const totalRotas = escalasMes.reduce((s,e)=>s+e.total_rotas,0);
+    const totalAlocadas = escalasMes.reduce((s,e)=>s+e.total_alocadas,0);
+    const totalSem = escalasMes.reduce((s,e)=>s+e.total_sem_motorista,0);
+    const taxaGeral = totalRotas ? Math.round(totalAlocadas/totalRotas*100) : 0;
+    const totalNS = noshowMes.length;
+    const driversUnicos = new Set(noshowMes.map(r=>r.driver_name)).size;
+
+    // ── MODAIS ────────────────────────────────────────────────
+    const modaisCounts = {MOTO:0, PASSEIO:0, FIORINO:0, VAN:0, OUTROS:0};
+    let totalModais = 0;
+    escalasMes.forEach(e=>{
+      if(!e.escala_json) return;
+      try{
+        const rows = JSON.parse(e.escala_json);
+        rows.forEach(r=>{
+          const m = (r.allocModal||'').toUpperCase();
+          if(m==='MOTO') modaisCounts.MOTO++;
+          else if(m==='PASSEIO') modaisCounts.PASSEIO++;
+          else if(m==='FIORINO') modaisCounts.FIORINO++;
+          else if(m==='VAN') modaisCounts.VAN++;
+          else if(m) modaisCounts.OUTROS++;
+          if(m) totalModais++;
+        });
+      }catch(err){}
+    });
+
+    // ── POR DIA ───────────────────────────────────────────────
+    const porDia = {};
+    escalasMes.forEach(e=>{
+      const k = e.data_escala+'|'+e.turno;
+      if(!porDia[k]) porDia[k]={data:e.data_escala,turno:e.turno,rotas:0,alocadas:0,sem:0,ns:0};
+      porDia[k].rotas+=e.total_rotas;
+      porDia[k].alocadas+=e.total_alocadas;
+      porDia[k].sem+=e.total_sem_motorista;
+    });
+    noshowMes.forEach(r=>{
+      Object.values(porDia).forEach(d=>{
+        if(d.data===r.noshow_date && d.turno===r.turno) d.ns++;
+      });
+    });
+    const diasRows = Object.values(porDia).sort((a,b)=>{
+      const da=a.data.split('/').reverse().join('');
+      const db=b.data.split('/').reverse().join('');
+      return da.localeCompare(db);
+    });
+
+    // ── NO-SHOW RANKING ──────────────────────────────────────
+    const nsCounts = {};
+    noshowMes.forEach(r=>{
+      if(!nsCounts[r.driver_name]) nsCounts[r.driver_name]={count:0,rotas:[],datas:[]};
+      nsCounts[r.driver_name].count++;
+      nsCounts[r.driver_name].rotas.push(r.rota||r.gaiola||'-');
+      nsCounts[r.driver_name].datas.push(r.noshow_date);
+    });
+    const nsRanking = Object.entries(nsCounts).sort((a,b)=>b[1].count-a[1].count);
+
+    relatorioData = {mes:mesNome, mesNum, ano, noshowMes, escalasMes, nsRanking,
+      totalRotas, totalAlocadas, totalSem, totalNS, modaisCounts, totalModais};
+
+    // ── RENDER ────────────────────────────────────────────────
+    function pct(n){ return totalModais ? Math.round(n/totalModais*100)+'%' : '0%'; }
+
+    c.innerHTML = `
+      <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+        <h3 style="font-size:15px;font-weight:700">${mesNome} — ${currentHub.hub_name}</h3>
+      </div>
+
+      <!-- KPIs GERAIS -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px">
+        <div class="kpi-card"><div class="k-label">Escalas geradas</div><div class="k-val">${totalEscalas}</div></div>
+        <div class="kpi-card k-accent"><div class="k-label">Total de rotas</div><div class="k-val">${totalRotas}</div></div>
+        <div class="kpi-card k-green"><div class="k-label">Alocadas</div><div class="k-val" style="color:var(--green)">${totalAlocadas}</div><div class="k-sub">${taxaGeral}% aproveitamento</div></div>
+        <div class="kpi-card k-red"><div class="k-label">Sem motorista</div><div class="k-val" style="color:var(--red)">${totalSem}</div></div>
+        <div class="kpi-card k-orange"><div class="k-label">No-shows</div><div class="k-val" style="color:var(--orange)">${totalNS}</div><div class="k-sub">${driversUnicos} drivers únicos</div></div>
+      </div>
+
+      <!-- MODAIS -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-step"><i class="ti ti-car" style="font-size:11px"></i></div>
+          <span class="card-title">Modais alocados no mês</span>
+          <span class="card-subtitle">${totalModais} alocações totais</span>
+        </div>
+        <div style="padding:16px 18px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">
+            <div class="kpi-card" style="border-top:3px solid #424242">
+              <div class="k-label">Moto</div>
+              <div class="k-val" style="font-size:24px">${modaisCounts.MOTO}</div>
+              <div class="k-sub">${pct(modaisCounts.MOTO)} do total</div>
+              <div style="height:6px;background:#f5f5f5;border-radius:3px;margin-top:8px">
+                <div style="height:6px;background:#424242;border-radius:3px;width:${pct(modaisCounts.MOTO)}"></div>
+              </div>
+            </div>
+            <div class="kpi-card" style="border-top:3px solid #004D40">
+              <div class="k-label">Passeio</div>
+              <div class="k-val" style="font-size:24px">${modaisCounts.PASSEIO}</div>
+              <div class="k-sub">${pct(modaisCounts.PASSEIO)} do total</div>
+              <div style="height:6px;background:#f5f5f5;border-radius:3px;margin-top:8px">
+                <div style="height:6px;background:#004D40;border-radius:3px;width:${pct(modaisCounts.PASSEIO)}"></div>
+              </div>
+            </div>
+            <div class="kpi-card" style="border-top:3px solid #4527A0">
+              <div class="k-label">Fiorino</div>
+              <div class="k-val" style="font-size:24px">${modaisCounts.FIORINO}</div>
+              <div class="k-sub">${pct(modaisCounts.FIORINO)} do total</div>
+              <div style="height:6px;background:#f5f5f5;border-radius:3px;margin-top:8px">
+                <div style="height:6px;background:#4527A0;border-radius:3px;width:${pct(modaisCounts.FIORINO)}"></div>
+              </div>
+            </div>
+            <div class="kpi-card" style="border-top:3px solid #880E4F">
+              <div class="k-label">Van</div>
+              <div class="k-val" style="font-size:24px">${modaisCounts.VAN}</div>
+              <div class="k-sub">${pct(modaisCounts.VAN)} do total</div>
+              <div style="height:6px;background:#f5f5f5;border-radius:3px;margin-top:8px">
+                <div style="height:6px;background:#880E4F;border-radius:3px;width:${pct(modaisCounts.VAN)}"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POR DIA -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <div class="card-step"><i class="ti ti-calendar" style="font-size:11px"></i></div>
+          <span class="card-title">Operação por dia</span>
+          <span class="card-subtitle">${diasRows.length} escalas no mês</span>
+        </div>
+        <div style="padding:0">
+          <div class="table-wrap"><table class="data-table">
+            <thead><tr><th>Data</th><th>Turno</th><th>Rotas</th><th>Alocadas</th><th>Sem motorista</th><th>Taxa</th><th>No-shows</th></tr></thead>
+            <tbody>${diasRows.map(d=>`<tr>
+              <td style="font-weight:500">${d.data}</td>
+              <td>${turnoBadge(d.turno)}</td>
+              <td>${d.rotas}</td>
+              <td style="color:var(--green);font-weight:600">${d.alocadas}</td>
+              <td style="color:${d.sem>0?'var(--red)':'var(--green)'};font-weight:600">${d.sem}</td>
+              <td><span style="font-weight:600;color:${d.rotas&&Math.round(d.alocadas/d.rotas*100)>=95?'var(--green)':'var(--orange)'}">${d.rotas?Math.round(d.alocadas/d.rotas*100):0}%</span></td>
+              <td style="color:${d.ns>0?'var(--orange)':'var(--muted)'}">${d.ns||'-'}</td>
+            </tr>`).join('')}</tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- NS RANKING -->
+      ${nsRanking.length ? `
+      <div class="card">
+        <div class="card-header">
+          <div class="card-step" style="background:var(--red)"><i class="ti ti-ban" style="font-size:11px"></i></div>
+          <span class="card-title">Ranking de No-Show</span>
+          <span class="card-subtitle">${nsRanking.length} drivers</span>
+        </div>
+        <div style="padding:0"><table class="data-table">
+          <thead><tr><th>#</th><th>Driver</th><th>Ocorrências</th><th>Rotas</th><th>Datas</th><th>Risco</th></tr></thead>
+          <tbody>${nsRanking.map(([name,d],i)=>`<tr>
+            <td style="color:var(--muted);font-size:12px">${i+1}</td>
+            <td style="font-weight:500">${name}</td>
+            <td><span style="font-weight:700;font-size:15px;color:${d.count>=5?'var(--red)':'var(--orange)'}">${d.count}x</span></td>
+            <td style="font-size:12px;color:var(--muted)">${d.rotas.slice(0,3).join(', ')}${d.rotas.length>3?' ...':''}</td>
+            <td style="font-size:12px;color:var(--muted)">${[...new Set(d.datas)].slice(0,3).join(', ')}</td>
+            <td><span class="badge ${d.count>=5?'bsp-err':d.count>=3?'bsp-sub':'bsp-am'}">${d.count>=5?'Alto':d.count>=3?'Médio':'Baixo'}</span></td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>` : `<div class="card" style="padding:20px;text-align:center;color:var(--green)">✅ Nenhum no-show em ${mesNome}</div>`}
+    `;
+  }catch(e){
+    c.innerHTML='<div class="no-data">Erro: '+e.message+'</div>';
+  }
+}
+
+// ── FUNÇÕES FALTANTES (bug fix) ───────────────────────────────────
+function afterRenderResults(){
+  // Salva escala no histórico do Supabase após renderizar
+  const turnoSel = document.querySelector('input[name="turno"]:checked')?.value || 'AM';
+  if(typeof salvarEscalaHistorico === 'function') salvarEscalaHistorico(turnoSel);
+}
+
+function initDefaultDates(){
+  // Inicializa datas padrão nos campos de histórico e relatório
+  const hoje = new Date();
+  const anoMes = hoje.toISOString().slice(0,7);
+  const dataHoje = hoje.toISOString().slice(0,10);
+  const primeiroDia = dataHoje.slice(0,8)+'01';
+  const relMes = document.getElementById('rel-mes');
+  if(relMes && !relMes.value) relMes.value = anoMes;
+  const histIni = document.getElementById('hist-data-ini');
+  if(histIni && !histIni.value) histIni.value = primeiroDia;
+  const histFim = document.getElementById('hist-data-fim');
+  if(histFim && !histFim.value) histFim.value = dataHoje;
+}
+
+async function exportarRelatorio(){
+  if(!relatorioData){ alert('Gere o relatório primeiro.'); return; }
+  const wb = XLSX.utils.book_new();
+  const {noshowMes, escalasMes, nsRanking, totalRotas, totalAlocadas, totalSem, totalNS, modaisCounts} = relatorioData;
+
+  // Aba resumo
+  const resumo = [
+    {Métrica:'Total de escalas', Valor:escalasMes.length},
+    {Métrica:'Total de rotas', Valor:totalRotas},
+    {Métrica:'Rotas alocadas', Valor:totalAlocadas},
+    {Métrica:'Rotas sem motorista', Valor:totalSem},
+    {Métrica:'Taxa de aproveitamento', Valor:totalRotas?Math.round(totalAlocadas/totalRotas*100)+'%':'0%'},
+    {Métrica:'No-shows', Valor:totalNS},
+    {Métrica:'Moto', Valor:modaisCounts.MOTO},
+    {Métrica:'Passeio', Valor:modaisCounts.PASSEIO},
+    {Métrica:'Fiorino', Valor:modaisCounts.FIORINO},
+    {Métrica:'Van', Valor:modaisCounts.VAN},
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumo), 'Resumo');
+
+  // Aba no-show
+  if(noshowMes.length){
+    const nsData = noshowMes.map(r=>({
+      Driver:r.driver_name, Rota:r.rota||'', Gaiola:r.gaiola||'',
+      Turno:r.turno, Data:r.noshow_date
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(nsData), 'No-Show');
+  }
+
+  // Aba ranking
+  if(nsRanking.length){
+    const rank = nsRanking.map(([name,d],i)=>({
+      '#':i+1, Driver:name, Ocorrências:d.count,
+      Risco:d.count>=5?'Alto':d.count>=3?'Médio':'Baixo'
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rank), 'Ranking NS');
+  }
+
+  XLSX.writeFile(wb, 'Relatorio_'+relatorioData.mes.replace(/ /g,'_')+'.xlsx');
 }
 </script>
 </body>
