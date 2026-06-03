@@ -911,6 +911,7 @@ async function loadDisp(inp){
     const buf=await f.arrayBuffer();
     const wb=XLSX.read(buf,{type:'array'});
     dispData=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+    try{ localStorage.setItem('shopee_dispData', JSON.stringify(dispData)); }catch(e){}
     const keys=Object.keys(dispData[0]||{});
     const colDia=keys[5]||'?';
     let am=0,sd=0,both=0,dupes=0;
@@ -957,6 +958,7 @@ async function loadEscala(inp){
       g:parseInt(r['G']||0)||0,
       gg:parseInt(r['GG']||0)||0
     }));
+    try{ localStorage.setItem('shopee_escData', JSON.stringify(escData)); }catch(e){}
     const ciclos=[...new Set(escData.map(r=>r.turno).filter(Boolean))];
     btn.textContent=`✓ ${f.name} | ${escData.length} rotas | ciclos: ${ciclos.join(', ')}`;
     btn.className='file-upload loaded';
@@ -2199,6 +2201,7 @@ function showApp(){
   const hubEl = document.getElementById('topbar-hub');
   if(hubEl && currentHub) hubEl.textContent = currentHub.hub_name;
   initDefaultDates();
+  restoreFromStorage();
 }
 
 async function loadHubData(){
@@ -2686,7 +2689,7 @@ async function buscarHistorico(){
           <div style="padding:0">
             <div class="table-wrap"><table class="data-table">
               <thead><tr><th>Turno</th><th>Rota</th><th>Gaiola</th><th>AT</th><th>Cluster</th><th>Modal pedido</th><th>Motorista</th><th>Modal alocado</th><th>Status</th></tr></thead>
-              <tbody>${escala.slice(0,50).map(r=>`<tr class="${r.status==='sem_driver'?'err-row':''}">
+              <tbody>${escala.map(r=>`<tr class="${r.status==='sem_driver'?'err-row':''}"
                 <td>${turnoBadge(r.turno)}</td>
                 <td style="font-weight:500">${r.rota}</td>
                 <td style="font-size:12px;color:var(--muted)">${r.letra||'-'}</td>
@@ -2697,7 +2700,7 @@ async function buscarHistorico(){
                 <td>${r.allocModal?modalBadge(r.allocModal):'-'}</td>
                 <td>${r.status==='sem_driver'?'<span class="badge bsp-err">Sem motorista</span>':r.status==='plotado'?'<span class="badge bsp-plotado">Plotado</span>':'<span class="badge bsp-ok">OK</span>'}</td>
               </tr>`).join('')}
-              ${escala.length>50?`<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:12px">... mais ${escala.length-50} rotas</td></tr>`:''}
+
               </tbody>
             </table></div>
           </div>` : '<div style="padding:14px;color:var(--muted);font-size:13px">Detalhes não disponíveis</div>'}
@@ -2915,6 +2918,32 @@ function afterRenderResults(){
   // Salva escala no histórico do Supabase após renderizar
   const turnoSel = document.querySelector('input[name="turno"]:checked')?.value || 'AM';
   if(typeof salvarEscalaHistorico === 'function') salvarEscalaHistorico(turnoSel);
+  // Persiste allRows no localStorage para sobreviver reload
+  try{ localStorage.setItem('shopee_lastAllRows', JSON.stringify(allRows)); }catch(e){}
+  try{ localStorage.setItem('shopee_lastTurno', turnoSel); }catch(e){}
+}
+
+function restoreFromStorage(){
+  // Restaura dispData, escData e allRows do localStorage após reload
+  try{
+    const d = localStorage.getItem('shopee_dispData');
+    if(d){ dispData = JSON.parse(d); }
+  }catch(e){}
+  try{
+    const e = localStorage.getItem('shopee_escData');
+    if(e){ escData = JSON.parse(e); }
+  }catch(e){}
+  try{
+    const a = localStorage.getItem('shopee_lastAllRows');
+    if(a){
+      allRows = JSON.parse(a);
+      // Re-renderiza resultados se havia escala gerada
+      if(allRows.length > 0){
+        livresData = []; alertas = [];
+        renderResults();
+      }
+    }
+  }catch(e){}
 }
 
 function initDefaultDates(){
