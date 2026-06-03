@@ -2268,6 +2268,8 @@ window.addEventListener('load', function(){
       currentHub = JSON.parse(stored);
       showApp();
       loadHubData();
+      // Restaura dados do localStorage após login restaurado
+      restoreFromStorage();
     }catch(e){ sessionStorage.removeItem('hub'); }
   }
 });
@@ -2283,8 +2285,15 @@ function switchRevTab(id, btn){
 }
 
 function gerarReversao(){
-  if(!escData.length){ alert('Importe a roteirização primeiro.'); return; }
-  if(!dispData.length){ alert('Importe a disponibilidade primeiro.'); return; }
+  // Tenta restaurar do localStorage se não estiver em memória
+  if(!escData.length){
+    try{ const s=localStorage.getItem('shopee_escData'); if(s) escData=JSON.parse(s); }catch(e){}
+  }
+  if(!dispData.length){
+    try{ const s=localStorage.getItem('shopee_dispData'); if(s) dispData=JSON.parse(s); }catch(e){}
+  }
+  if(!escData.length){ alert('Importe a roteirização primeiro.\nDica: recarregue e importe o arquivo CSV novamente.'); return; }
+  if(!dispData.length){ alert('Importe a disponibilidade primeiro.\nDica: recarregue e importe o arquivo XLSX novamente.'); return; }
 
   const input = document.getElementById('noshow-input').value||'';
   const turnoRev = document.querySelector('input[name="turno-rev"]:checked').value;
@@ -2689,7 +2698,7 @@ async function buscarHistorico(){
           <div style="padding:0">
             <div class="table-wrap"><table class="data-table">
               <thead><tr><th>Turno</th><th>Rota</th><th>Gaiola</th><th>AT</th><th>Cluster</th><th>Modal pedido</th><th>Motorista</th><th>Modal alocado</th><th>Status</th></tr></thead>
-              <tbody>${escala.map(r=>`<tr class="${r.status==='sem_driver'?'err-row':''}"
+              <tbody>${escala.map(r=>`<tr class="${r.status==='sem_driver'?'err-row':''}">
                 <td>${turnoBadge(r.turno)}</td>
                 <td style="font-weight:500">${r.rota}</td>
                 <td style="font-size:12px;color:var(--muted)">${r.letra||'-'}</td>
@@ -2939,8 +2948,18 @@ function restoreFromStorage(){
       allRows = JSON.parse(a);
       // Re-renderiza resultados se havia escala gerada
       if(allRows.length > 0){
+        // Restaurar turno selecionado
+        const savedTurno = localStorage.getItem('shopee_lastTurno') || 'AM';
+        const radioAM  = document.querySelector('input[name="turno"][value="AM"]');
+        const radioSD  = document.querySelector('input[name="turno"][value="SD"]');
+        const radioAmb = document.querySelector('input[name="turno"][value="AMBOS"]');
+        if(savedTurno==='SD'    && radioSD)  radioSD.checked  = true;
+        else if(savedTurno==='AMBOS' && radioAmb) radioAmb.checked = true;
+        else if(radioAM) radioAM.checked = true;
         livresData = []; alertas = [];
         renderResults();
+        // Navegar para a página de escala para mostrar resultado
+        showPage('escala');
       }
     }
   }catch(e){}
