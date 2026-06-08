@@ -914,6 +914,7 @@ async function loadDisp(inp){
     try{ localStorage.setItem('shopee_dispData', JSON.stringify(dispData)); }catch(e){}
     const keys=Object.keys(dispData[0]||{});
     const colDia=keys[5]||'?';
+
     let am=0,sd=0,both=0,dupes=0;
     const seenIds=new Set();
     dispData.forEach(d=>{
@@ -1110,29 +1111,43 @@ function runEscala(){
   const todosDisponiveis = _deduped2.filter(d=>!penalizados.includes(d.nameNorm));
   const plotadosDisponiveis = todosDisponiveis
     .filter(d=>isPloated(d))
-    .sort((a,b)=> a.cluster.split(',').length - b.cluster.split(',').length);
+    .sort((a,b)=> a.cluster.split(',').length - b.cluster.split(',').length); // menos opções = prioridade maior
 
   const plotadosUsados = new Set();
+  const rotasUsadasPlotado = new Set();
   const plotadoReserva = {};
 
-  // FIX: alocar plotados nas MAIORES rotas do seu cluster (por score de volume+G+GG)
-  // Ordena rotas por score decrescente antes de reservar plotados
-  const rotasParaPlotados = [...rotasFiltradas].sort((a,b)=>{
-    const sA = parseVol(a.volume) + (parseInt(a.gg)||0)*200 + (parseInt(a.g)||0)*50;
-    const sB = parseVol(b.volume) + (parseInt(b.gg)||0)*200 + (parseInt(b.g)||0)*50;
-    return sB - sA;
-  });
+  // MATCHING BIPARTIDO: itera pelos PLOTADOS (não pelas rotas)
+  // Garante que cada plotado receba UMA rota — plotados com menos clusters têm prioridade
+  // Para cada plotado: encontra a maior rota disponível compatível com seu modal e cluster
+  plotadosDisponiveis.forEach(plotado => {
+    const modalOrder = getModalOrder(0, plotado.modal, 0, 0);
+    if(modalOrder[0]==='MOTO') return; // plotados moto não são pré-alocados
 
-  rotasParaPlotados.forEach(rota=>{
-    const rCluster = rota.cluster;
-    const modalOrder = getModalOrder(rota.volume, rota.modal||'', rota.g||0, rota.gg||0);
-    if(modalOrder[0]==='MOTO') return; // plotados nunca em moto
-    const p = plotadosDisponiveis.find(d=>{
-      if(plotadosUsados.has(d.nameNorm)) return false;
-      if(!driverFitCluster(d.cluster, rCluster)) return false;
-      return true;
-    });
-    if(p){ plotadosUsados.add(p.nameNorm); plotadoReserva[rota.rota]=p; }
+    // Candidatas: rotas compatíveis com cluster e modal, não-moto, ainda não reservadas
+    const candidatas = rotasFiltradas
+      .filter(rota => {
+        if(rotasUsadasPlotado.has(rota.rota)) return false;
+        const mo = getModalOrder(rota.volume, rota.modal||'', rota.g||0, rota.gg||0);
+        if(mo[0]==='MOTO') return false;
+        // Modal compatível: modal do plotado deve estar na ordem de preferência da rota
+        if(!mo.includes(plotado.modal)) return false;
+        if(!driverFitCluster(plotado.cluster, rota.cluster)) return false;
+        return true;
+      })
+      .sort((a,b)=>{
+        // Prioriza a maior rota disponível (volume + GG + G)
+        const sA = parseVol(a.volume) + (parseInt(a.gg)||0)*200 + (parseInt(a.g)||0)*50;
+        const sB = parseVol(b.volume) + (parseInt(b.gg)||0)*200 + (parseInt(b.g)||0)*50;
+        return sB - sA;
+      });
+
+    if(candidatas.length > 0){
+      const rota = candidatas[0];
+      plotadosUsados.add(plotado.nameNorm);
+      rotasUsadasPlotado.add(rota.rota);
+      plotadoReserva[rota.rota] = plotado;
+    }
   });
 
   rotasFiltradas.forEach(rota=>{
