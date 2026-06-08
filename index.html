@@ -276,6 +276,7 @@ textarea{resize:vertical;min-height:90px;}
 <div class="sidebar-footer">
     <b>Shopee Logistics</b>
     Last Mile Hub
+    <div style="margin-top:6px;font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.03em">v4.0 · 08/06/2026</div>
   </div>
 </aside>
 
@@ -288,6 +289,10 @@ textarea{resize:vertical;min-height:90px;}
     </div>
     <div class="topbar-right">
       <span id="topbar-status" class="status-badge" style="display:none"></span>
+      <span id="badge-disp" title="Disponibilidade" style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">👥 –</span>
+      <span id="badge-rot"  title="Roteirização"   style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">🗺️ –</span>
+      <span id="badge-disp" title="Disponibilidade" style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">👥 Disp. –</span>
+      <span id="badge-rot"  title="Roteirização"   style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">🗺️ Rot. –</span>
       <span style="font-size:12px;color:var(--muted);background:var(--sp-light);color:var(--sp-dark);padding:3px 10px;border-radius:99px;font-weight:500" id="topbar-hub"></span>
       <span style="font-size:12px;color:var(--muted)" id="topbar-date"></span>
     </div>
@@ -697,11 +702,26 @@ function clearRodizio(){
   if(confirm('Limpar todo o histórico de rodízio?')){ saveRodizio([]); renderRodizio(); }
 }
 function clearRodizioHoje(){
+  if(!confirm('Limpar escala e rodízio de hoje? A escala atual será apagada e você poderá gerar uma nova.')) return;
+  // Limpa rodízio de hoje
   const today = new Date().toLocaleDateString('pt-BR');
   const list = getRodizio().filter(r => r.date !== today);
   saveRodizio(list);
+  // Limpa escala do localStorage
+  try{ localStorage.removeItem('shopee_lastAllRows'); }catch(e){}
+  try{ localStorage.removeItem('shopee_lastTurno'); }catch(e){}
+  // Limpa estado em memória
+  allRows = []; livresData = []; alertas = [];
+  // Esconde o bloco de resultados
+  const resEl = document.getElementById('results');
+  if(resEl) resEl.style.display = 'none';
+  // export-btn mantido habilitado para permitir exportar mesmo após limpar
   renderRodizio();
-  alert('Registros de hoje removidos. Agora pode gerar a escala normalmente.');
+  // Sincroniza limpeza no Supabase também
+  if(typeof syncRodizioToHub === 'function' && currentHub){
+    const escalados = [];
+    syncRodizioToHub(escalados, '__clear_today__');
+  }
 }
 function importarRodizio(){
   document.getElementById('rodizio-import-input').click();
@@ -743,6 +763,21 @@ function exportarRodizio(){
 function getRodizioJanela(){
   return parseInt(document.getElementById('rodizio-days')?.value||'3')||3;
 }
+function diasSeguidos(nameNorm){
+  // Conta quantos dias CONSECUTIVOS até hoje o driver foi escalado
+  const list = getRodizio().filter(r=>nrm(r.name)===nameNorm);
+  if(!list.length) return 0;
+  const hoje = new Date();
+  let dias = 0;
+  for(let i=0; i<7; i++){
+    const d = new Date(hoje); d.setDate(d.getDate()-i);
+    const ds = d.toLocaleDateString('pt-BR');
+    if(list.some(r=>r.date===ds)) dias++;
+    else break;
+  }
+  return dias;
+}
+
 function vezesRodou(nameNorm){
   const list = getRodizio();
   const dias = getRodizioJanela();
@@ -912,6 +947,8 @@ async function loadDisp(inp){
     const wb=XLSX.read(buf,{type:'array'});
     dispData=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
     try{ localStorage.setItem('shopee_dispData', JSON.stringify(dispData)); }catch(e){}
+    const bdDisp=document.getElementById('badge-disp');
+    if(bdDisp){ bdDisp.textContent=`👥 ${dispData.length}`; bdDisp.style.background='#E6F9EE'; bdDisp.style.color='#0A7A33'; }
     const keys=Object.keys(dispData[0]||{});
     const colDia=keys[5]||'?';
 
@@ -960,6 +997,8 @@ async function loadEscala(inp){
       gg:parseInt(r['GG']||0)||0
     }));
     try{ localStorage.setItem('shopee_escData', JSON.stringify(escData)); }catch(e){}
+    const bdRot=document.getElementById('badge-rot');
+    if(bdRot){ bdRot.textContent=`🗺️ ${escData.length}`; bdRot.style.background='#E6F9EE'; bdRot.style.color='#0A7A33'; }
     const ciclos=[...new Set(escData.map(r=>r.turno).filter(Boolean))];
     btn.textContent=`✓ ${f.name} | ${escData.length} rotas | ciclos: ${ciclos.join(', ')}`;
     btn.className='file-upload loaded';
@@ -1011,7 +1050,8 @@ function runEscala(){
       noShow:Number(d['No Show Time']||0),
       noshow:Number(d['No Show Time']||0),
       id:String(d['Driver ID']||''),
-      isSDOnly: turno==='SD'
+      isSDOnly: turno==='SD',
+      isAMOnly: turno==='AM'
     };
   }).filter(d=>d&&!penalizados.includes(d.nameNorm));
 
@@ -1174,9 +1214,15 @@ function runEscala(){
         const bVezes=vezesRodou(b.nameNorm);
         if(aVezes!==bVezes) return aVezes-bVezes;
         if(isSdRota){
+          // Rotas SD: prioriza drivers SÓ SD (preserva AMBOS para AM)
           const aSD=a.isSDOnly?0:1;
           const bSD=b.isSDOnly?0:1;
           if(aSD!==bSD) return aSD-bSD;
+        } else {
+          // Rotas AM: prioriza drivers SÓ AM (preserva AMBOS para SD)
+          const aAM=a.isAMOnly?0:1;
+          const bAM=b.isAMOnly?0:1;
+          if(aAM!==bAM) return aAM-bAM;
         }
         // 1ª prioridade: primeiro cluster do driver bate com a rota
         const aFirst = firstClusterMatch(a, rCluster) ? 0 : 1;
@@ -1186,7 +1232,9 @@ function runEscala(){
         const aClusters = (a.cluster||'').split(',').length;
         const bClusters = (b.cluster||'').split(',').length;
         if(aClusters!==bClusters) return aClusters-bClusters;
-        return a.noShow-b.noShow;
+        // NS invertido: NS=0 primeiro, NS alto por último
+        if(a.noShow!==b.noShow) return a.noShow-b.noShow;
+        return 0;
       });
     }
 
@@ -1210,7 +1258,14 @@ function runEscala(){
         driverFitCluster(d.cluster, rCluster)
       ) : null);
     // Plotado aloca com o modal pedido pela rota (não o modal do driver)
-    if(pMatch){ chosen=pMatch; status='plotado'; allocModal=modalOrder[0]==='MOTO'?'MOTO':pMatch.modal; }
+    if(pMatch){
+      chosen=pMatch;
+      // Verificar se plotado foi para cluster principal ou secundário
+      const primeiroCluster = (pMatch.cluster||'').split(',')[0].trim();
+      const ehClusterPrincipal = firstClusterMatch(pMatch, rCluster);
+      status = ehClusterPrincipal ? 'plotado' : 'plotado_secundario';
+      allocModal=modalOrder[0]==='MOTO'?'MOTO':pMatch.modal;
+    }
     } // end if(!chosen) for van check
     if(!chosen){
       let found=false;
@@ -1354,7 +1409,7 @@ function renderEsc(rows){
   const b=document.getElementById('tbody-escala');
   if(!rows.length){b.innerHTML=`<tr><td colspan="9" class="no-result">Nenhuma rota encontrada</td></tr>`;return;}
   b.innerHTML=rows.map(r=>{
-    const sb=r.status==='plotado'?`<span class="badge bsp-plotado">Plotado</span>`:
+    const sb=r.status==='plotado_secundario'?`<span class="badge bsp-plotado" title="Plotado alocado fora do cluster principal" style="background:#FFF3E0;color:#E65100;border:1px solid #FF9500">Plotado ⚠️</span>`:r.status==='plotado'?`<span class="badge bsp-plotado">Plotado</span>`:
       r.status==='ok'?`<span class="badge bsp-ok">OK</span>`:
       r.status==='volume'?`<span class="badge bsp-vol">Volume</span>`:
       r.status==='substituido'?`<span class="badge bsp-sub">VAN→Fiorino</span>`:
@@ -1373,7 +1428,7 @@ function renderEsc(rows){
       <td>${volStr}</td>
       <td style="font-size:12px">${r.gg>0?`<span class="badge bsp-err">GG:${r.gg}</span>`:r.g>0?`<span class="badge bsp-sub">G:${r.g}</span>`:'-'}</td>
       <td>${modalBadge(r.modalPedido)}</td>
-      <td style="font-weight:500">${r.driver}</td>
+      <td style="font-weight:500">${r.driver}${diasSeguidos(nrm(r.driver||''))>=3?` <span style="font-size:10px;background:#FFEBEE;color:#B71C1C;padding:1px 6px;border-radius:99px;font-weight:700" title="Rodou ${diasSeguidos(nrm(r.driver||''))} dias seguidos">🔄 Rod. forçado</span>`:''}</td>
       <td style="font-size:12px;color:var(--sp-text-muted)">${r.driverId||'-'}</td>
       <td>${r.allocModal?modalBadge(r.allocModal):'-'}</td>
       <td>${sb}</td>
@@ -1692,6 +1747,17 @@ function renderNSTable(drivers, maxNS){
   </table>`;
 }
 
+function nsTendencia(noshow, name){
+  // Analisa histórico local de no-show para tendência
+  // Retorna seta de tendência baseada no NS atual vs média esperada
+  // (simplificado: usa NS atual como proxy)
+  if(noshow === 0) return '<span style="color:#4caf50;font-size:13px" title="Sem histórico">✓</span>';
+  if(noshow >= 5)  return '<span style="color:#f44336;font-size:13px" title="Alto risco">↑↑</span>';
+  if(noshow >= 3)  return '<span style="color:#ff9800;font-size:13px" title="Atenção">↑</span>';
+  if(noshow >= 1)  return '<span style="color:#ffc107;font-size:13px" title="Baixo risco">→</span>';
+  return '';
+}
+
 function filterNS(){
   const q = nrm(document.getElementById('ns-search').value);
   const maxNS = nsAllDrivers[0]?.noshow||1;
@@ -1724,7 +1790,16 @@ function renderDisponibilidade(){
 
   function getFiltered(view){
     if(view==='am')  return drivers.filter(d=>d.turno==='AM'||d.turno==='AMBOS');
-    if(view==='sd')  return drivers.filter(d=>d.turno==='SD'||d.turno==='AMBOS');
+    if(view==='sd'){
+      // Desconta drivers AMBOS que já foram escalados no AM
+      const escaladosAM = new Set(allRows.filter(r=>r.driverObj).map(r=>nrm(r.driverObj.name||'')));
+      return drivers.filter(d=>{
+        if(d.turno!=='SD' && d.turno!=='AMBOS') return false;
+        // Se AMBOS e já escalado no AM → não aparece no SD
+        if(d.turno==='AMBOS' && escaladosAM.has(nrm(d.name))) return false;
+        return true;
+      });
+    }
     return drivers.filter(d=>d.turno!==null); // geral = todos confirmados
   }
 
@@ -1739,6 +1814,10 @@ function renderDisponibilidade(){
     const sdOnly  = drivers.filter(d=>d.turno==='SD').length;
     const ambos   = drivers.filter(d=>d.turno==='AMBOS').length;
     const pending = drivers.filter(d=>d.turno===null).length;
+    // Desconto SD: AMBOS já escalados no AM
+    const escaladosAMSet = new Set(allRows.filter(r=>r.driverObj).map(r=>nrm(r.driverObj.name||'')));
+    const ambosJaEscalados = drivers.filter(d=>d.turno==='AMBOS' && escaladosAMSet.has(nrm(d.name))).length;
+    const sdLivre = (view==='sd') ? list.length : (sdOnly + ambos - ambosJaEscalados);
 
     let html = `
       <div class="disp-toggle">
@@ -1761,7 +1840,11 @@ function renderDisponibilidade(){
     } else {
       const {amStart,sdStart}=getHorarios();
     const label = view==='am'?`AM (${amStart})`:`SD / PM1 (${sdStart})`;
-      html += `<div class="kpi-card"><div class="kpi-num" style="color:#1a1a1a">${total}</div><div class="kpi-label">Disponíveis ${label}</div></div>`;
+      const temEscalaAM = allRows.length > 0 && allRows.some(r=>r.turno==='AM'||r.turno==='am');
+      const descontoInfo = (view==='sd' && temEscalaAM && ambosJaEscalados>0)
+        ? ` <span style="font-size:10px;background:#FFF3E0;color:#E65100;padding:2px 7px;border-radius:99px;font-weight:700;margin-left:6px">-${ambosJaEscalados} escalados AM</span>`
+        : '';
+      html += `<div class="kpi-card"><div class="kpi-num" style="color:#1a1a1a">${total}</div><div class="kpi-label">Disponíveis ${label}${descontoInfo}</div></div>`;
       modals.forEach(m=>{
         html += `<div class="kpi-card"><div class="kpi-num" style="color:${colors[m]}">${byModal[m]}</div><div class="kpi-label">${m}</div></div>`;
       });
@@ -1797,7 +1880,7 @@ function renderDisponibilidade(){
             <tbody>${mDrivers.sort((a,b)=>a.noshow-b.noshow).map(d=>`<tr>
               <td style="font-weight:600">${d.name}</td>
               <td>${turnoBadge(d.turno==='AMBOS'?'AMBOS':d.turno)}</td>
-              <td><span style="font-weight:700;color:${d.noshow>=5?'#f44336':d.noshow>=3?'#ff9800':d.noshow>=1?'#ffc107':'#4caf50'}">${d.noshow}</span></td>
+              <td><span style="font-weight:700;color:${d.noshow>=5?'#f44336':d.noshow>=3?'#ff9800':d.noshow>=1?'#ffc107':'#4caf50'}">${d.noshow}</span> ${nsTendencia(d.noshow,d.name)}</td>
               <td style="font-size:11px;color:#888;max-width:200px">${d.cluster||'-'}</td>
             </tr>`).join('')}</tbody>
           </table></div>
@@ -1828,7 +1911,7 @@ function exportarTudo(){
       'Modal pedido': String(r.modalPedido||''),
       'Motorista sugerido': String(r.driver||''),
       'Modal alocado': String(r.allocModal||''),
-      'Status': r.status==='plotado'?'Plotado':
+      'Status': r.status==='plotado_secundario'?'Plotado (cluster sec.)':r.status==='plotado'?'Plotado':
                 r.status==='ok'?'OK':
                 r.status==='volume'?'Volume':
                 r.status==='substituido'?'VAN-Fiorino':
@@ -2208,6 +2291,8 @@ async function doLogin(){
     sessionStorage.setItem('hub', JSON.stringify(currentHub));
     showApp();
     await loadHubData();
+    restoreFromStorage(); // plotados já carregados do Supabase
+    resetSessionTimer(); // inicia contagem de timeout
   }catch(e){
     erro.style.display='block'; erro.textContent='Erro: ' + e.message;
   }
@@ -2220,7 +2305,7 @@ function showApp(){
   const hubEl = document.getElementById('topbar-hub');
   if(hubEl && currentHub) hubEl.textContent = currentHub.hub_name;
   initDefaultDates();
-  restoreFromStorage();
+  // restoreFromStorage é chamado após loadHubData (para garantir plotados carregados)
 }
 
 async function loadHubData(){
@@ -2280,15 +2365,15 @@ function doLogout(){
 }
 
 // Auto-login se sessão existir (após página carregar)
-window.addEventListener('load', function(){
+window.addEventListener('load', async function(){
   const stored = sessionStorage.getItem('hub');
   if(stored){
     try{
       currentHub = JSON.parse(stored);
       showApp();
-      loadHubData();
-      // Restaura dados do localStorage após login restaurado
-      restoreFromStorage();
+      await loadHubData(); // aguarda plotados/penalizados do Supabase
+      restoreFromStorage(); // só então re-renderiza escala com plotados corretos
+      resetSessionTimer(); // inicia contagem de timeout
     }catch(e){ sessionStorage.removeItem('hub'); }
   }
 });
@@ -2724,9 +2809,9 @@ async function buscarHistorico(){
                 <td style="font-size:11px;color:var(--muted)">${r.at||'-'}</td>
                 <td style="font-size:12px">${r.cluster}</td>
                 <td>${modalBadge(r.modalPedido)}</td>
-                <td style="font-weight:500">${r.driver}</td>
+                <td style="font-weight:500">${r.driver}${diasSeguidos(nrm(r.driver||''))>=3?` <span style="font-size:10px;background:#FFEBEE;color:#B71C1C;padding:1px 6px;border-radius:99px;font-weight:700">🔄 Rod.forçado</span>`:''}</td>
                 <td>${r.allocModal?modalBadge(r.allocModal):'-'}</td>
-                <td>${r.status==='sem_driver'?'<span class="badge bsp-err">Sem motorista</span>':r.status==='plotado'?'<span class="badge bsp-plotado">Plotado</span>':'<span class="badge bsp-ok">OK</span>'}</td>
+                <td>${r.status==='sem_driver'?'<span class="badge bsp-err">Sem motorista</span>':r.status==='plotado_secundario'?'<span class="badge bsp-plotado" style="background:#FFF3E0;color:#E65100">Plotado ⚠️</span>':r.status==='plotado'?'<span class="badge bsp-plotado">Plotado</span>':'<span class="badge bsp-ok">OK</span>'}</td>
               </tr>`).join('')}
 
               </tbody>
@@ -2951,6 +3036,47 @@ function afterRenderResults(){
   try{ localStorage.setItem('shopee_lastTurno', turnoSel); }catch(e){}
 }
 
+// ── TIMEOUT DE SESSÃO ────────────────────────────────────────────
+let _sessionTimer = null;
+const SESSION_TIMEOUT_MS = 8 * 60 * 60 * 1000; // 8 horas
+const SESSION_WARN_MS    = 7 * 60 * 60 * 1000; // aviso 1h antes
+
+function resetSessionTimer(){
+  clearTimeout(_sessionTimer);
+  // Aviso 1h antes de expirar
+  _sessionTimer = setTimeout(()=>{
+    const continua = confirm(
+      '⚠️ Sua sessão expira em 1 hora.\n\n' +
+      'Exporte a escala agora para não perder os dados.\n\n' +
+      'Clique OK para continuar logado ou Cancelar para sair.'
+    );
+    if(!continua){ doLogout(); return; }
+    // Renovar sessão por mais 8h
+    resetSessionTimer();
+  }, SESSION_WARN_MS);
+}
+
+function doLogout(){
+  sessionStorage.removeItem('hub');
+  currentHub = null;
+  document.querySelector('.sidebar').style.display = 'none';
+  document.querySelector('.main-wrap').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function updateDataBadges(){
+  const bdDisp=document.getElementById('badge-disp');
+  const bdRot=document.getElementById('badge-rot');
+  if(bdDisp){
+    if(dispData.length){ bdDisp.textContent=`👥 ${dispData.length}`; bdDisp.style.background='#E6F9EE'; bdDisp.style.color='#0A7A33'; }
+    else { bdDisp.textContent='👥 –'; bdDisp.style.background='#FFEBEE'; bdDisp.style.color='#B71C1C'; }
+  }
+  if(bdRot){
+    if(escData.length){ bdRot.textContent=`🗺️ ${escData.length}`; bdRot.style.background='#E6F9EE'; bdRot.style.color='#0A7A33'; }
+    else { bdRot.textContent='🗺️ –'; bdRot.style.background='#FFEBEE'; bdRot.style.color='#B71C1C'; }
+  }
+}
+
 function restoreFromStorage(){
   // Restaura dispData, escData e allRows do localStorage após reload
   try{
@@ -2967,6 +3093,7 @@ function restoreFromStorage(){
       allRows = JSON.parse(a);
       // Re-renderiza resultados se havia escala gerada
       if(allRows.length > 0){
+        updateDataBadges();
         // Restaurar turno selecionado
         const savedTurno = localStorage.getItem('shopee_lastTurno') || 'AM';
         const radioAM  = document.querySelector('input[name="turno"][value="AM"]');
