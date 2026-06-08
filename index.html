@@ -1130,8 +1130,12 @@ function runEscala(){
         if(rotasUsadasPlotado.has(rota.rota)) return false;
         const mo = getModalOrder(rota.volume, rota.modal||'', rota.g||0, rota.gg||0);
         if(mo[0]==='MOTO') return false;
-        // Modal compatível: modal do plotado deve estar na ordem de preferência da rota
-        if(!mo.includes(plotado.modal)) return false;
+        // Modal compatível: FIORINO e PASSEIO são intercambiáveis (não-moto)
+        // MOTO só vai em rota MOTO; VAN só em rota que aceita VAN
+        const pModal = plotado.modal;
+        if(pModal === 'VAN' && !mo.includes('VAN')) return false;
+        if(pModal === 'MOTO') return false; // já filtrado acima
+        // FIORINO e PASSEIO: podem ir em qualquer rota não-moto
         if(!driverFitCluster(plotado.cluster, rota.cluster)) return false;
         return true;
       })
