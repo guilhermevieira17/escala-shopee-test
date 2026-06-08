@@ -291,8 +291,6 @@ textarea{resize:vertical;min-height:90px;}
       <span id="topbar-status" class="status-badge" style="display:none"></span>
       <span id="badge-disp" title="Disponibilidade" style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">👥 –</span>
       <span id="badge-rot"  title="Roteirização"   style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">🗺️ –</span>
-      <span id="badge-disp" title="Disponibilidade" style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">👥 Disp. –</span>
-      <span id="badge-rot"  title="Roteirização"   style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">🗺️ Rot. –</span>
       <span style="font-size:12px;color:var(--muted);background:var(--sp-light);color:var(--sp-dark);padding:3px 10px;border-radius:99px;font-weight:500" id="topbar-hub"></span>
       <span style="font-size:12px;color:var(--muted)" id="topbar-date"></span>
     </div>
@@ -2234,10 +2232,15 @@ async function sbFetch(table, params){
 async function sbPost(table, body){
   const r = await fetch(SB_URL + '/rest/v1/' + table, {
     method: 'POST',
-    headers: {...SB_HEADERS, 'Prefer': 'resolution=merge-duplicates'},
+    headers: {...SB_HEADERS, 'Prefer': 'resolution=merge-duplicates,return=representation'},
     body: JSON.stringify(body)
   });
-  return r.ok;
+  if(!r.ok){
+    const err = await r.text();
+    console.error('sbPost error:', table, r.status, err);
+    throw new Error('Supabase ' + table + ': ' + r.status + ' — ' + err.slice(0,120));
+  }
+  return true;
 }
 
 async function sbDelete(table, params){
@@ -2840,12 +2843,33 @@ async function gerarRelatorio(){
     const [ano, mesNum] = mes.split('-');
     const mesNome = new Date(ano+'-'+mesNum+'-01').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
 
-    // Load escalas do mês
+    // Load escalas do mês (Supabase)
     const escalasAll = await sbFetch('escalas','select=*&hub_code=eq.'+encodeURIComponent(currentHub.hub_code));
-    const escalasMes = escalasAll.filter(e=>{
+    let escalasMes = escalasAll.filter(e=>{
       const parts = (e.data_escala||'').split('/');
       return parts.length===3 && parts[1]===mesNum && parts[2]===ano;
     });
+
+    // Fallback: se não encontrou nada no Supabase E há escala local do mês selecionado
+    if(!escalasMes.length && allRows.length){
+      const hoje = new Date().toLocaleDateString('pt-BR');
+      const [d,m,a] = hoje.split('/');
+      if(m===mesNum && a===ano){
+        // Injetar a escala atual como se fosse do Supabase
+        const turnoAtual = document.querySelector('input[name="turno"]:checked')?.value||'AM';
+        escalasMes = [{
+          data_escala: hoje,
+          turno: turnoAtual,
+          total_rotas: allRows.length,
+          total_alocadas: allRows.filter(r=>r.status!=='sem_driver').length,
+          total_sem_motorista: allRows.filter(r=>r.status==='sem_driver').length,
+          escala_json: JSON.stringify(allRows.map(r=>({
+            turno:r.turno, rota:r.rota, cluster:r.cluster,
+            allocModal:r.allocModal, status:r.status
+          })))
+        }];
+      }
+    }
 
     // Load noshow do mês
     const noshowAll = await sbFetch('noshow','select=*&hub_code=eq.'+encodeURIComponent(currentHub.hub_code));
