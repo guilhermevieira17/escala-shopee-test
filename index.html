@@ -235,6 +235,7 @@ textarea{resize:vertical;min-height:90px;}
         <option value="PR-CURITIBA">LM Hub_PR_Curitiba</option>
         <option value="PR-PATO-BRANCO">LM Hub_PR_Pato Branco</option>
         <option value="PR-SAO-JOSE-DOS-PINH">LM Hub_PR_Sao Jose Dos Pinhais</option>
+        <option value="PR-FAZENDA-RIO-GRANDE">LM Hub_PR_Fazenda Rio Grande</option>
       </select>
     </div>
     <div style="margin-bottom:24px;">
@@ -276,6 +277,7 @@ textarea{resize:vertical;min-height:90px;}
 <div class="sidebar-footer">
     <b>Shopee Logistics</b>
     Last Mile Hub
+    <div style="margin-top:6px;font-size:9px;color:rgba(255,255,255,.35);letter-spacing:.03em">v4.2 · 22/06/2026</div>
     <div style="margin-top:6px;font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.03em">v4.0 · 08/06/2026</div>
   </div>
 </aside>
@@ -291,6 +293,8 @@ textarea{resize:vertical;min-height:90px;}
       <span id="topbar-status" class="status-badge" style="display:none"></span>
       <span id="badge-disp" title="Disponibilidade" style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">👥 –</span>
       <span id="badge-rot"  title="Roteirização"   style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">🗺️ –</span>
+      <span id="badge-disp" title="Disponibilidade" style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">👥 Disp. –</span>
+      <span id="badge-rot"  title="Roteirização"   style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">🗺️ Rot. –</span>
       <span style="font-size:12px;color:var(--muted);background:var(--sp-light);color:var(--sp-dark);padding:3px 10px;border-radius:99px;font-weight:500" id="topbar-hub"></span>
       <span style="font-size:12px;color:var(--muted)" id="topbar-date"></span>
     </div>
@@ -660,12 +664,16 @@ const _td=document.getElementById('topbar-date'); if(_td) _td.textContent = new 
 let dispData=[], escData=[], allRows=[], livresData=[], alertas=[];
 
 // ── RODÍZIO STORAGE ──────────────────────────────────────────────
+function rodizioKey(){
+  const hc=(currentHub&&currentHub.hub_code)||'local';
+  return 'shopee_rodizio_'+hc;
+}
 function getRodizio(){
-  try{ return JSON.parse(localStorage.getItem('shopee_rodizio')||'[]'); }
+  try{ return JSON.parse(localStorage.getItem(rodizioKey())||'[]'); }
   catch(e){ return []; }
 }
 function saveRodizio(list){
-  try{ localStorage.setItem('shopee_rodizio', JSON.stringify(list)); }catch(e){}
+  try{ localStorage.setItem(rodizioKey(), JSON.stringify(list)); }catch(e){}
 }
 function addToRodizio(drivers, turno){
   const list = getRodizio();
@@ -832,8 +840,20 @@ function driverFitCluster(dc,rc){
 }
 
 function parseVol(v){
-  // Remove ponto separador de milhar brasileiro: 1.168 → 1168
-  return parseFloat((v||'0').toString().replace(/\./g,'').replace(',','.'))||0;
+  const s=(v||'0').toString().trim();
+  if(!s||s==='0') return 0;
+  if(s.includes(',')){
+    const ci=s.lastIndexOf(','),after=s.slice(ci+1);
+    if(after.length===3&&/^\d+$/.test(after)) return parseFloat(s.replace(/[.,]/g,''))||0;
+    return parseFloat(s.replace(/\./g,'').replace(',','.'))||0;
+  }
+  const dot=s.lastIndexOf('.');
+  if(dot!==-1){
+    const after=s.slice(dot+1);
+    if(after.length===3&&/^\d+$/.test(after)&&!s.slice(0,dot).includes('.')) return parseFloat(s.replace('.',''))||0;
+    return parseFloat(s)||0;
+  }
+  return parseFloat(s)||0;
 }
 
 function getModalOrder(vol, rotaModal, g, gg){
@@ -848,15 +868,20 @@ function getModalOrder(vol, rotaModal, g, gg){
   // Volume alto — independente de modal
   if(v>1800) return ['VAN','FIORINO','PASSEIO'];
 
-  // GG → sobe modal: PASSEIO→FIORINO, FIORINO→VAN, VAN→VAN
+  // GG → sobe modal respeitando modal da rota:
+  // PASSEIO+GG → FIORINO (não VAN, pois rota é PASSEIO)
+  // FIORINO+GG → FIORINO (já é o teto para rota FIORINO)
+  // VAN+GG     → VAN (rota já é VAN)
+  // Volume alto (>1800) já captura os casos que realmente precisam de VAN
   if(hasGG){
-    if(m==='PASSEIO') return ['FIORINO','PASSEIO'];
-    if(m==='FIORINO') return ['FIORINO','PASSEIO'];
     if(m==='VAN')     return ['VAN','FIORINO','PASSEIO'];
+    if(m==='FIORINO') return ['FIORINO','PASSEIO'];
+    if(m==='PASSEIO') return ['FIORINO','PASSEIO'];
   }
 
-  // G → sobe para Fiorino se for Passeio, mantém se já for Fiorino/Van
-  if(hasG){
+  // G: só sobe modal se G > 2 pacotes. Até 2G sem GG → mantém modal original
+  const gQty=parseInt(g)||0;
+  if(hasG && gQty>2){
     if(m==='PASSEIO') return ['FIORINO','PASSEIO'];
     if(m==='FIORINO') return ['FIORINO','PASSEIO'];
     if(m==='VAN')     return ['VAN','FIORINO','PASSEIO'];
@@ -961,6 +986,20 @@ async function loadDisp(inp){
       else if(t==='SD') sd++;
       else if(t==='AMBOS') both++;
     });
+    // ── DETECTAR HORÁRIO AUTOMÁTICO — sempre sobrescreve com o valor do arquivo ──
+    { let detAM=null, detSD=null;
+      [...new Set(dispData.map(d=>String(d[colDia]||'')).filter(v=>v))].forEach(v=>{
+        (v.replace(/\n/g,' ').match(/\d{2}:\d{2}/g)||[]).forEach(h=>{
+          const hr=parseInt(h);
+          if(hr>=3&&hr<=9&&!detAM)   detAM=h;   // AM: 03h–09h
+          if(hr>=10&&hr<=15&&!detSD) detSD=h;   // SD: 10h–15h
+        });
+      });
+      const elAM=document.getElementById('am-start');
+      const elSD=document.getElementById('sd-start');
+      if(detAM&&elAM) elAM.value=detAM; // sempre sobrescreve
+      if(detSD&&elSD) elSD.value=detSD;
+    }
     const {amStart:aS,sdStart:sS}=getHorarios();
     const dupeMsg=dupes>0?` | ⚠️ ${dupes} duplicatas removidas`:'';
     btn.textContent=`✓ ${f.name} | data: ${colDia} | AM(${aS}):${am} SD(${sS}):${sd} AM+SD:${both}${dupeMsg}`;
@@ -1048,7 +1087,7 @@ function runEscala(){
       noShow:Number(d['No Show Time']||0),
       noshow:Number(d['No Show Time']||0),
       id:String(d['Driver ID']||''),
-      isSDOnly: turno==='SD',
+      isSDOnly: turno==='SD'||turno==='PM1', // PM1 = exclusivo SD, mesma prioridade
       isAMOnly: turno==='AM'
     };
   }).filter(d=>d&&!penalizados.includes(d.nameNorm));
@@ -1149,10 +1188,10 @@ function runEscala(){
   const todosDisponiveis = _deduped2.filter(d=>!penalizados.includes(d.nameNorm));
   const plotadosDisponiveis = todosDisponiveis
     .filter(d=>isPloated(d))
-    .sort((a,b)=> a.cluster.split(',').length - b.cluster.split(',').length); // menos opções = prioridade maior
+    .sort((a,b)=> a.cluster.split(',').filter(x=>x.trim()).length - b.cluster.split(',').filter(x=>x.trim()).length); // menos opções = prioridade maior
 
   const plotadosUsados = new Set();
-  const rotasUsadasPlotado = new Set();
+  const rotasUsadasPlotado = new Set(Object.keys(vanReserva)); // VAN já reservou essas rotas
   const plotadoReserva = {};
 
   // MATCHING BIPARTIDO: itera pelos PLOTADOS (não pelas rotas)
@@ -1324,6 +1363,89 @@ function runEscala(){
       allocModal,status,volFlag,driverObj:chosen,at:rota.at||''});
   });
 
+  // ── SEGUNDA VARREDURA: tenta preencher rotas sem driver com livres compatíveis ──
+  // Resolve o caso de driver com cluster na 3ª posição que ficou de fora
+  const semDriver = allRows.filter(r=>r.status==='sem_driver');
+  if(semDriver.length > 0){
+    semDriver.forEach(row=>{
+      const rClusterFix = row.cluster;
+      const moFix = getModalOrder(row.volume, row.modalPedido, row.g, row.gg);
+      let fixDriver = null, fixModal = null;
+      for(const tryModal of moFix){
+        // Busca em TODOS os disponíveis não usados com cluster compatível
+        const cands = available.filter(d=>
+          !used.has(d.nameNorm) &&
+          !isPloatedByName(d.nameNorm) &&
+          d.modal === tryModal &&
+          driverFitCluster(d.cluster, rClusterFix)
+        ).sort((a,b)=>a.noShow-b.noShow);
+        if(cands.length){ fixDriver=cands[0]; fixModal=tryModal; break; }
+        // Fallback: aceita modal diferente
+        if(tryModal !== 'MOTO'){
+          const fb = available.filter(d=>
+            !used.has(d.nameNorm) &&
+            !isPloatedByName(d.nameNorm) &&
+            driverFitCluster(d.cluster, rClusterFix)
+          ).sort((a,b)=>a.noShow-b.noShow);
+          if(fb.length){ fixDriver=fb[0]; fixModal=fb[0].modal; break; }
+        }
+      }
+      if(fixDriver){
+        used.add(fixDriver.nameNorm);
+        const idx = allRows.findIndex(r=>r.rota===row.rota);
+        if(idx!==-1){
+          allRows[idx].driver    = fixDriver.name;
+          allRows[idx].driverId  = fixDriver.id;
+          allRows[idx].allocModal= fixModal;
+          allRows[idx].status    = fixModal===moFix[0]?'ok':'substituido';
+          allRows[idx].driverObj = fixDriver;
+        }
+      }
+    });
+  }
+
+  // ── SEGUNDA VARREDURA: preenche rotas sem driver com livres compatíveis ──
+  // Resolve o caso de driver com cluster na 2ª/3ª posição que ficou disponível
+  // mas havia rota compatível sem motorista
+  const semDriverRows = allRows.filter(r=>r.status==='sem_driver');
+  if(semDriverRows.length > 0){
+    semDriverRows.forEach(row=>{
+      const rClusterFix = row.cluster;
+      const moFix = getModalOrder(row.volume, row.modalPedido, row.g, row.gg);
+      let fixDriver = null, fixModal = null;
+      // Tenta modal correto primeiro, depois qualquer modal
+      for(const tryModal of moFix){
+        const cands = available.filter(d=>
+          !used.has(d.nameNorm) &&
+          !isPloatedByName(d.nameNorm) &&
+          d.modal === tryModal &&
+          driverFitCluster(d.cluster, rClusterFix)
+        ).sort((a,b)=>a.noShow-b.noShow);
+        if(cands.length){ fixDriver=cands[0]; fixModal=tryModal; break; }
+      }
+      // Fallback: qualquer modal compatível com o cluster
+      if(!fixDriver && moFix[0]!=='MOTO'){
+        const fb = available.filter(d=>
+          !used.has(d.nameNorm) &&
+          !isPloatedByName(d.nameNorm) &&
+          driverFitCluster(d.cluster, rClusterFix)
+        ).sort((a,b)=>a.noShow-b.noShow);
+        if(fb.length){ fixDriver=fb[0]; fixModal=fb[0].modal; }
+      }
+      if(fixDriver){
+        used.add(fixDriver.nameNorm);
+        const rowIdx = allRows.findIndex(r=>r.rota===row.rota);
+        if(rowIdx!==-1){
+          allRows[rowIdx].driver    = fixDriver.name;
+          allRows[rowIdx].driverId  = fixDriver.id;
+          allRows[rowIdx].allocModal= fixModal;
+          allRows[rowIdx].status    = fixModal===moFix[0]?'ok':'substituido';
+          allRows[rowIdx].driverObj = fixDriver;
+        }
+      }
+    });
+  }
+
   livresData=available.filter(d=>!used.has(d.nameNorm));
 
   // Alertar plotados que nao foram escalados
@@ -1337,7 +1459,11 @@ function runEscala(){
   const expBtn=document.getElementById('export-btn'); if(expBtn) expBtn.disabled=false;
 
   // Save escalados to rodizio (local + Supabase)
-  const escalados=allRows.filter(r=>r.driverObj).map(r=>r.driverObj);
+  // Plotados NUNCA entram no rodízio — nem escalados nem não-escalados
+  const escalados=allRows
+    .filter(r=>r.driverObj && r.status!=='plotado' && r.status!=='plotado_sec')
+    .map(r=>r.driverObj)
+    .filter(d=>!isPloatedByName(d.nameNorm));
   addToRodizio(escalados, turnoSel);
   if(typeof syncRodizioToHub==='function') syncRodizioToHub(escalados, turnoSel);
 
@@ -1353,7 +1479,7 @@ function renderResults(){
   const resEl=document.getElementById('results'); if(resEl) resEl.style.display='block';
   const total=allRows.length;
   const filled=allRows.filter(r=>r.status!=='sem_driver').length;
-  const plotCt=allRows.filter(r=>r.status==='plotado').length;
+  const plotCt=allRows.filter(r=>r.status==='plotado'||r.status==='plotado_sec').length;
   const subCt=allRows.filter(r=>r.status==='substituido').length;
   const volCt=allRows.filter(r=>r.volFlag||r.g>0||r.gg>0).length;
   const forcCt=allRows.filter(r=>r.status==='ok_forcado'||r.status==='sub_forcado').length;
@@ -1472,7 +1598,7 @@ function renderRelatorio(){
 
   const total=allRows.length;
   const ok=allRows.filter(r=>r.status==='ok').length;
-  const plotadosCt=allRows.filter(r=>r.status==='plotado').length;
+  const plotadosCt=allRows.filter(r=>r.status==='plotado'||r.status==='plotado_sec').length;
   const sub=allRows.filter(r=>r.status==='substituido'||r.status==='sub_forcado').length;
   const forcado=allRows.filter(r=>r.status==='ok_forcado'||r.status==='sub_forcado').length;
   const sem=allRows.filter(r=>r.status==='sem_driver').length;
@@ -1488,7 +1614,7 @@ function renderRelatorio(){
     if(!byCluster[k]) byCluster[k]={total:0,ok:0,plotado:0,sub:0,forcado:0,sem:0,modais:{}};
     byCluster[k].total++;
     if(r.status==='ok') byCluster[k].ok++;
-    else if(r.status==='plotado') byCluster[k].plotado++;
+    else if(r.status==='plotado'||r.status==='plotado_sec') byCluster[k].plotado++;
     else if(r.status==='substituido'||r.status==='sub_forcado') byCluster[k].sub++;
     else if(r.status==='ok_forcado') byCluster[k].forcado++;
     else if(r.status==='sem_driver') byCluster[k].sem++;
@@ -2232,15 +2358,10 @@ async function sbFetch(table, params){
 async function sbPost(table, body){
   const r = await fetch(SB_URL + '/rest/v1/' + table, {
     method: 'POST',
-    headers: {...SB_HEADERS, 'Prefer': 'resolution=merge-duplicates,return=representation'},
+    headers: {...SB_HEADERS, 'Prefer': 'resolution=merge-duplicates'},
     body: JSON.stringify(body)
   });
-  if(!r.ok){
-    const err = await r.text();
-    console.error('sbPost error:', table, r.status, err);
-    throw new Error('Supabase ' + table + ': ' + r.status + ' — ' + err.slice(0,120));
-  }
-  return true;
+  return r.ok;
 }
 
 async function sbDelete(table, params){
@@ -2843,33 +2964,12 @@ async function gerarRelatorio(){
     const [ano, mesNum] = mes.split('-');
     const mesNome = new Date(ano+'-'+mesNum+'-01').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
 
-    // Load escalas do mês (Supabase)
+    // Load escalas do mês
     const escalasAll = await sbFetch('escalas','select=*&hub_code=eq.'+encodeURIComponent(currentHub.hub_code));
-    let escalasMes = escalasAll.filter(e=>{
+    const escalasMes = escalasAll.filter(e=>{
       const parts = (e.data_escala||'').split('/');
       return parts.length===3 && parts[1]===mesNum && parts[2]===ano;
     });
-
-    // Fallback: se não encontrou nada no Supabase E há escala local do mês selecionado
-    if(!escalasMes.length && allRows.length){
-      const hoje = new Date().toLocaleDateString('pt-BR');
-      const [d,m,a] = hoje.split('/');
-      if(m===mesNum && a===ano){
-        // Injetar a escala atual como se fosse do Supabase
-        const turnoAtual = document.querySelector('input[name="turno"]:checked')?.value||'AM';
-        escalasMes = [{
-          data_escala: hoje,
-          turno: turnoAtual,
-          total_rotas: allRows.length,
-          total_alocadas: allRows.filter(r=>r.status!=='sem_driver').length,
-          total_sem_motorista: allRows.filter(r=>r.status==='sem_driver').length,
-          escala_json: JSON.stringify(allRows.map(r=>({
-            turno:r.turno, rota:r.rota, cluster:r.cluster,
-            allocModal:r.allocModal, status:r.status
-          })))
-        }];
-      }
-    }
 
     // Load noshow do mês
     const noshowAll = await sbFetch('noshow','select=*&hub_code=eq.'+encodeURIComponent(currentHub.hub_code));
