@@ -397,6 +397,16 @@ textarea{resize:vertical;min-height:90px;}
       </button>
       <div id="debug-output" style="display:none;margin-top:10px;background:#1a1a2e;color:#00ff88;font-family:monospace;font-size:12px;padding:14px;border-radius:8px;white-space:pre-wrap;max-height:300px;overflow-y:auto;"></div>
       <button class="btn-outline" id="export-btn" onclick="exportarTudo()" disabled><i class="ti ti-file-spreadsheet"></i> Exportar tudo para Excel (.xlsx)</button>
+      <button class="btn-outline" id="spx-btn" onclick="atribuirSPX()" disabled style="border-color:#EE4D2D;color:#EE4D2D;margin-top:8px;position:relative">
+        <i class="ti ti-brand-shopee"></i> Atribuir no SPX
+        <span id="spx-progress" style="display:none;position:absolute;right:12px;font-size:11px"></span>
+      </button>
+      <div id="spx-log" style="display:none;margin-top:8px;background:#1a1a2e;color:#00ff88;font-family:monospace;font-size:11px;padding:12px;border-radius:8px;white-space:pre-wrap;max-height:180px;overflow-y:auto;"></div>
+      <button class="btn-outline" id="spx-btn" onclick="atribuirSPX()" disabled style="border-color:#EE4D2D;color:#EE4D2D;margin-top:8px;position:relative">
+        <i class="ti ti-brand-shopee"></i> Atribuir no SPX
+        <span id="spx-progress" style="display:none;position:absolute;right:12px;font-size:11px;color:#EE4D2D"></span>
+      </button>
+      <div id="spx-log" style="display:none;margin-top:8px;background:#1a1a2e;color:#00ff88;font-family:monospace;font-size:11px;padding:12px;border-radius:8px;white-space:pre-wrap;max-height:200px;overflow-y:auto;"></div>
 
       <!-- RESULTS -->
       <div class="results card" id="results" style="display:none;margin-top:16px;">
@@ -500,8 +510,13 @@ textarea{resize:vertical;min-height:90px;}
               <button class="add-entry-btn" onclick="exportarReversao()">
                 <i class="ti ti-file-spreadsheet"></i> Exportar Excel
               </button>
+              <button class="add-entry-btn" id="spx-rev-btn" onclick="atribuirSPXReversao()" style="color:#EE4D2D;border-color:#EE4D2D;position:relative">
+                <i class="ti ti-brand-shopee"></i> Atribuir no SPX
+                <span id="spx-rev-progress" style="display:none;position:absolute;right:10px;font-size:11px"></span>
+              </button>
             </div>
           </div>
+          <div id="spx-rev-log" style="display:none;margin:8px 0;background:#1a1a2e;color:#00ff88;font-family:monospace;font-size:11px;padding:12px;border-radius:8px;white-space:pre-wrap;max-height:180px;overflow-y:auto;"></div>
           <div class="results-stats" id="reversao-stats"></div>
 
           <!-- TABS -->
@@ -1468,6 +1483,7 @@ function runEscala(){
       msg:`⚠️ PLOTADO NÃO ESCALADO: ${d.name} (${d.modal}) — sem rota disponível para seu modal`});
   });
   const expBtn=document.getElementById('export-btn'); if(expBtn) expBtn.disabled=false;
+  const spxBtn=document.getElementById('spx-btn'); if(spxBtn) spxBtn.disabled=false;
 
   // Save escalados to rodizio (local + Supabase)
   // Plotados NUNCA entram no rodízio — nem escalados nem não-escalados
@@ -3312,6 +3328,251 @@ async function exportarRelatorio(){
 
   XLSX.writeFile(wb, 'Relatorio_'+relatorioData.mes.replace(/ /g,'_')+'.xlsx');
 }
+
+// ── SPX AUTO-ATRIBUIÇÃO ──────────────────────────────────────────────────────
+const SPX_BASE     = 'https://spx.shopee.com.br';
+const SPX_PRECHECK = SPX_BASE + '/spx_delivery/admin/assignment/assignment_task/pre_check/driver';
+const SPX_REASSIGN = SPX_BASE + '/spx_delivery/admin/assignment/assignment_task/reassign';
+
+function spxLog(msg, cor){
+  const el = document.getElementById('spx-log');
+  if(!el) return;
+  el.style.display = 'block';
+  el.textContent += msg + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+
+function spxProgress(txt){
+  const el = document.getElementById('spx-progress');
+  if(el){ el.style.display = txt ? 'inline' : 'none'; el.textContent = txt; }
+}
+
+async function spxPreCheck(atCode, driverId){
+  const r = await fetch(SPX_PRECHECK, {
+    method: 'POST',
+    credentials: 'include',   // usa cookies do browser logado no SPX
+    headers: {'Content-Type':'application/json','app':'FMS Portal'},
+    body: JSON.stringify({driver_id: driverId, assignment_task_id: atCode})
+  });
+  const d = await r.json();
+  return d.retcode === 0 && d.data && d.data.is_valid;
+}
+
+async function spxReassign(atCode, driverId){
+  const r = await fetch(SPX_REASSIGN, {
+    method: 'POST',
+    credentials: 'include',   // usa cookies do browser logado no SPX
+    headers: {'Content-Type':'application/json','app':'FMS Portal'},
+    body: JSON.stringify({
+      driver_id:                    driverId,
+      assignment_task_id:           atCode,
+      assign_driver_across_station: false,
+      driver_vehicle_id:            ''
+    })
+  });
+  const d = await r.json();
+  return {ok: d.retcode === 0, msg: d.message || '', retcode: d.retcode};
+}
+
+async function atribuirSPX(){
+  // Coletar ATs com driver alocado
+  const itens = allRows.filter(r =>
+    r.at && r.at.startsWith('AT') &&
+    r.driverObj && r.driverObj.id &&
+    r.status !== 'sem_driver'
+  );
+
+  if(!itens.length){
+    alert('Nenhuma rota com AT e ID Driver encontrada.\nGere a escala primeiro.');
+    return;
+  }
+
+  const confirma = confirm(
+    `Atribuir ${itens.length} drivers no SPX?\n\n` +
+    `⚠️  Você precisa estar logado no SPX no mesmo browser.\n\n` +
+    `Clique OK para iniciar.`
+  );
+  if(!confirma) return;
+
+  const btn = document.getElementById('spx-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader"></i> Atribuindo...';
+
+  const logEl = document.getElementById('spx-log');
+  logEl.textContent = '';
+  spxLog(`Iniciando — ${itens.length} atribuições  [${new Date().toLocaleTimeString('pt-BR')}]`);
+  spxLog('─'.repeat(55));
+
+  let ok = 0, err = 0, skip = 0;
+  const erros = [];
+
+  for(let i = 0; i < itens.length; i++){
+    const item = itens[i];
+    const at   = item.at;
+    const did  = parseInt(item.driverObj.id);
+    const nm   = item.driver || '';
+    const label = `[${String(i+1).padStart(3,'0')}/${itens.length}]`;
+
+    spxProgress(`${i+1}/${itens.length}`);
+    spxLog(`${label} ${at}  ${nm.substring(0,30).padEnd(30)}  ID:${did}  ... `, false);
+
+    try {
+      // 1. Pre-check
+      const valido = await spxPreCheck(at, did);
+      if(!valido){
+        const logEl = document.getElementById('spx-log');
+        logEl.textContent = logEl.textContent.trimEnd() + '⚠️ inválido\n';
+        skip++;
+        erros.push({at, did, nm, erro: 'pre_check inválido'});
+        await new Promise(r => setTimeout(r, 300));
+        continue;
+      }
+
+      // 2. Reassign
+      const res = await spxReassign(at, did);
+      const logEl2 = document.getElementById('spx-log');
+      if(res.ok){
+        logEl2.textContent = logEl2.textContent.trimEnd() + '✅\n';
+        ok++;
+      } else {
+        logEl2.textContent = logEl2.textContent.trimEnd() + `❌ [${res.retcode}] ${res.msg}\n`;
+        err++;
+        erros.push({at, did, nm, erro: res.msg, retcode: res.retcode});
+      }
+
+    } catch(e){
+      // CORS error — SPX não está aberto no browser
+      const logEl3 = document.getElementById('spx-log');
+      logEl3.textContent = logEl3.textContent.trimEnd() + `❌ ${e.message}\n`;
+      if(e.message.includes('fetch') || e.message.includes('CORS') || e.message.includes('Failed')){
+        spxLog('');
+        spxLog('⚠️  ERRO DE CONEXÃO — verifique:');
+        spxLog('   1. SPX aberto em outra aba deste browser');
+        spxLog('   2. Você está logado no SPX');
+        spxLog('   3. Tente em: chrome://flags → "Block insecure private network" = Disabled');
+        break;
+      }
+      err++;
+      erros.push({at, did, nm, erro: e.message});
+    }
+
+    logEl.scrollTop = logEl.scrollHeight;
+    await new Promise(r => setTimeout(r, 400)); // delay entre requisições
+  }
+
+  // Resultado final
+  spxLog('─'.repeat(55));
+  spxLog(`✅ OK: ${ok}  |  ❌ Erro: ${err}  |  ⚠️ Inválido: ${skip}  |  Total: ${itens.length}`);
+  spxLog(`Concluído em ${new Date().toLocaleTimeString('pt-BR')}`);
+
+  spxProgress('');
+  btn.disabled = false;
+  btn.innerHTML = `<i class="ti ti-brand-shopee"></i> Atribuir no SPX ${ok>0?'('+ok+' ✅)':''}`;
+}
+
+
+// ── SPX ATRIBUIÇÃO — REVERSÃO NO-SHOW ────────────────────────────────────────
+async function atribuirSPXReversao(){
+  // Filtrar reversaoRows com AT válido, novo driver alocado e status ok/substituido
+  const itens = reversaoRows.filter(r =>
+    r.at && r.at.startsWith('AT') &&
+    r.driverObj && r.driverObj.id &&
+    r.status !== 'sem_driver'
+  );
+
+  if(!itens.length){
+    alert('Nenhuma rota com AT e novo driver encontrada.\nGere a reversão primeiro.');
+    return;
+  }
+
+  const confirma = confirm(
+    `Atribuir ${itens.length} drivers no SPX (reversão no-show)?\n\n` +
+    `⚠️  O SPX precisa estar aberto em outra aba deste browser.\n\n` +
+    `Clique OK para iniciar.`
+  );
+  if(!confirma) return;
+
+  const btn  = document.getElementById('spx-rev-btn');
+  const logEl = document.getElementById('spx-rev-log');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader"></i> Atribuindo...';
+  logEl.style.display = 'block';
+  logEl.textContent = '';
+
+  const log = msg => {
+    logEl.textContent += msg + '\n';
+    logEl.scrollTop = logEl.scrollHeight;
+  };
+  const prog = txt => {
+    const el = document.getElementById('spx-rev-progress');
+    if(el){ el.style.display = txt ? 'inline' : 'none'; el.textContent = txt; }
+  };
+
+  log(`Reversão no-show — ${itens.length} atribuições  [${new Date().toLocaleTimeString('pt-BR')}]`);
+  log('─'.repeat(55));
+
+  let ok = 0, err = 0, skip = 0;
+  const erros = [];
+
+  for(let i = 0; i < itens.length; i++){
+    const item = itens[i];
+    const at   = item.at;
+    const did  = parseInt(item.driverObj.id);
+    const nm   = item.driver || '';
+    const orig = item.originalDriver || '–';
+    const label = `[${String(i+1).padStart(3,'0')}/${itens.length}]`;
+
+    prog(`${i+1}/${itens.length}`);
+    log(`${label} ${at}  ${nm.substring(0,28).padEnd(28)}  ID:${did}  ... `);
+
+    try {
+      // Pre-check
+      const valido = await spxPreCheck(at, did);
+      if(!valido){
+        logEl.textContent = logEl.textContent.trimEnd() + '⚠️ inválido\n';
+        skip++;
+        erros.push({at, did, nm, orig, erro: 'pre_check inválido'});
+        await new Promise(r => setTimeout(r, 300));
+        continue;
+      }
+
+      // Reassign
+      const res = await spxReassign(at, did);
+      if(res.ok){
+        logEl.textContent = logEl.textContent.trimEnd() + '✅\n';
+        ok++;
+      } else {
+        logEl.textContent = logEl.textContent.trimEnd() + `❌ [${res.retcode}] ${res.msg}\n`;
+        err++;
+        erros.push({at, did, nm, orig, erro: res.msg});
+      }
+
+    } catch(e){
+      logEl.textContent = logEl.textContent.trimEnd() + `❌ ${e.message}\n`;
+      if(e.message.includes('fetch') || e.message.includes('Failed') || e.message.includes('CORS')){
+        log('');
+        log('⚠️  ERRO DE CONEXÃO — verifique:');
+        log('   1. SPX aberto em outra aba deste browser');
+        log('   2. Você está logado no SPX');
+        break;
+      }
+      err++;
+      erros.push({at, did, nm, orig, erro: e.message});
+    }
+
+    logEl.scrollTop = logEl.scrollHeight;
+    await new Promise(r => setTimeout(r, 400));
+  }
+
+  log('─'.repeat(55));
+  log(`✅ OK: ${ok}  |  ❌ Erro: ${err}  |  ⚠️ Inválido: ${skip}  |  Total: ${itens.length}`);
+  log(`Concluído em ${new Date().toLocaleTimeString('pt-BR')}`);
+
+  prog('');
+  btn.disabled = false;
+  btn.innerHTML = `<i class="ti ti-brand-shopee"></i> Atribuir no SPX ${ok>0?'('+ok+' ✅)':''}`;
+}
+
 </script>
 </body>
 </html>
