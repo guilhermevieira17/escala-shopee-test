@@ -293,8 +293,6 @@ textarea{resize:vertical;min-height:90px;}
       <span id="topbar-status" class="status-badge" style="display:none"></span>
       <span id="badge-disp" title="Disponibilidade" style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">👥 –</span>
       <span id="badge-rot"  title="Roteirização"   style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">🗺️ –</span>
-      <span id="badge-disp" title="Disponibilidade" style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">👥 Disp. –</span>
-      <span id="badge-rot"  title="Roteirização"   style="font-size:10px;padding:3px 8px;border-radius:99px;font-weight:700;background:#FFEBEE;color:#B71C1C">🗺️ Rot. –</span>
       <span style="font-size:12px;color:var(--muted);background:var(--sp-light);color:var(--sp-dark);padding:3px 10px;border-radius:99px;font-weight:500" id="topbar-hub"></span>
       <span style="font-size:12px;color:var(--muted)" id="topbar-date"></span>
     </div>
@@ -519,7 +517,7 @@ textarea{resize:vertical;min-height:90px;}
           <!-- TAB: Nova Escala -->
           <div class="tab-body active" id="t-rev-escala">
             <div class="table-wrap"><table class="data-table">
-              <thead><tr><th>Turno</th><th>Rota</th><th>Gaiola</th><th>AT</th><th>Cluster</th><th>Volume</th><th>G/GG</th><th>Modal pedido</th><th>Motorista sugerido</th><th>ID Driver</th><th>Modal alocado</th><th>Status</th></tr></thead>
+              <thead><tr><th>Turno</th><th>Rota</th><th>Gaiola</th><th>AT</th><th>Cluster</th><th>Volume</th><th>G/GG</th><th>Modal pedido</th><th>ID Original</th><th>Driver original (no-show)</th><th>Novo motorista</th><th>ID Novo</th><th>Modal alocado</th><th>Status</th></tr></thead>
               <tbody id="tbody-reversao"></tbody>
             </table></div>
           </div>
@@ -975,6 +973,21 @@ async function loadDisp(inp){
     const keys=Object.keys(dispData[0]||{});
     const colDia=keys[5]||'?';
 
+    // ── 1. DETECTAR HORÁRIO — sempre primeiro, antes de contar ──
+    { let detAM=null, detSD=null;
+      [...new Set(dispData.map(d=>String(d[colDia]||'')).filter(v=>v))].forEach(v=>{
+        (v.replace(/\n/g,' ').match(/\d{2}:\d{2}/g)||[]).forEach(h=>{
+          const hr=parseInt(h);
+          if(hr>=3&&hr<=9&&!detAM)   detAM=h;
+          if(hr>=10&&hr<=15&&!detSD) detSD=h;
+        });
+      });
+      const elAM=document.getElementById('am-start');
+      const elSD=document.getElementById('sd-start');
+      if(detAM&&elAM) elAM.value=detAM;
+      if(detSD&&elSD) elSD.value=detSD;
+    }
+    // ── 2. CONTAR turnos com horário já atualizado ──
     let am=0,sd=0,both=0,dupes=0;
     const seenIds=new Set();
     dispData.forEach(d=>{
@@ -986,20 +999,6 @@ async function loadDisp(inp){
       else if(t==='SD') sd++;
       else if(t==='AMBOS') both++;
     });
-    // ── DETECTAR HORÁRIO AUTOMÁTICO — sempre sobrescreve com o valor do arquivo ──
-    { let detAM=null, detSD=null;
-      [...new Set(dispData.map(d=>String(d[colDia]||'')).filter(v=>v))].forEach(v=>{
-        (v.replace(/\n/g,' ').match(/\d{2}:\d{2}/g)||[]).forEach(h=>{
-          const hr=parseInt(h);
-          if(hr>=3&&hr<=9&&!detAM)   detAM=h;   // AM: 03h–09h
-          if(hr>=10&&hr<=15&&!detSD) detSD=h;   // SD: 10h–15h
-        });
-      });
-      const elAM=document.getElementById('am-start');
-      const elSD=document.getElementById('sd-start');
-      if(detAM&&elAM) elAM.value=detAM; // sempre sobrescreve
-      if(detSD&&elSD) elSD.value=detSD;
-    }
     const {amStart:aS,sdStart:sS}=getHorarios();
     const dupeMsg=dupes>0?` | ⚠️ ${dupes} duplicatas removidas`:'';
     btn.textContent=`✓ ${f.name} | data: ${colDia} | AM(${aS}):${am} SD(${sS}):${sd} AM+SD:${both}${dupeMsg}`;
@@ -1029,7 +1028,7 @@ async function loadEscala(inp){
       modal:(r['Tipo de veículo']||'').trim().toUpperCase(),
       volume:r['Volume total da rota (litros)']||0,
       bairro:r['Bairro']||'',
-      at:r['AT / TO']||r['AT']||'',
+      at:r['AT / TO']||r['AT']||r['AT/TO']||r['At']||'',
       g:parseInt(r['G']||0)||0,
       gg:parseInt(r['GG']||0)||0
     }));
@@ -2582,6 +2581,15 @@ function gerarReversao(){
     let chosen=null, allocModal='', status='';
     const volFlag = parseVol(rota.volume)>800;
 
+    // Buscar driver original que fez no-show (do allRows da escala atual)
+    const originalRow = allRows.find(e=>{
+      const g=(e.letra||'').toUpperCase(), at=(e.at||'').toUpperCase();
+      const rG=(rota.letra||'').toUpperCase(), rAT=(rota.at||'').toUpperCase();
+      return rG&&g===rG || rAT&&at===rAT;
+    });
+    const originalDriver   = originalRow ? originalRow.driver   : '';
+    const originalDriverId = originalRow ? originalRow.driverId : '';
+
     for(const tryModal of modalOrder){
       const cands = available.filter(d=>
         !usedRev.has(d.nameNorm)&&
@@ -2599,6 +2607,7 @@ function gerarReversao(){
       g:rota.g||0, gg:rota.gg||0,
       modalPedido, driver:chosen?chosen.name:'— sem motorista —',
       driverId:chosen?chosen.id:'',
+      originalDriver, originalDriverId,
       allocModal, status, driverObj:chosen, at:rota.at||''
     });
   });
@@ -2666,6 +2675,8 @@ function renderReversao(){
       '<td style="font-size:12px">'+volStr+'</td>'+
       '<td>'+ggStr+'</td>'+
       '<td>'+modalBadge(r.modalPedido)+'</td>'+
+      '<td style="font-size:11px;color:var(--muted)">'+(r.originalDriverId||'-')+'</td>'+
+      '<td style="font-size:11px;color:var(--muted);text-decoration:line-through">'+(r.originalDriver||'-')+'</td>'+
       '<td style="font-weight:500">'+r.driver+'</td>'+
       '<td style="font-size:12px;color:var(--muted)">'+( r.driverId||'-')+'</td>'+
       '<td>'+(r.allocModal?modalBadge(r.allocModal):'-')+'</td>'+
