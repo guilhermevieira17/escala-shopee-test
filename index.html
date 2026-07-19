@@ -397,10 +397,15 @@ textarea{resize:vertical;min-height:90px;}
       </button>
       <div id="debug-output" style="display:none;margin-top:10px;background:#1a1a2e;color:#00ff88;font-family:monospace;font-size:12px;padding:14px;border-radius:8px;white-space:pre-wrap;max-height:300px;overflow-y:auto;"></div>
       <button class="btn-outline" id="export-btn" onclick="exportarTudo()" disabled><i class="ti ti-file-spreadsheet"></i> Exportar tudo para Excel (.xlsx)</button>
-      <button class="btn-outline" id="spx-btn" onclick="atribuirSPX()" disabled style="border-color:#EE4D2D;color:#EE4D2D;margin-top:8px;position:relative">
-        <i class="ti ti-brand-shopee"></i> Atribuir no SPX
-        <span id="spx-progress" style="display:none;position:absolute;right:12px;font-size:11px"></span>
-      </button>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn-outline" id="spx-btn" onclick="atribuirSPX()" disabled style="border-color:#EE4D2D;color:#EE4D2D;position:relative">
+          <i class="ti ti-brand-shopee"></i> Atribuir no SPX
+          <span id="spx-progress" style="display:none;position:absolute;right:10px;font-size:11px"></span>
+        </button>
+        <button class="btn-outline" onclick="abrirConfigCookie()" style="border-color:#ff9800;color:#ff9800;font-size:12px">
+          <i class="ti ti-cookie"></i> Cookie SPX
+        </button>
+      </div>
       <div id="spx-log" style="display:none;margin-top:8px;background:#1a1a2e;color:#00ff88;font-family:monospace;font-size:11px;padding:12px;border-radius:8px;white-space:pre-wrap;max-height:180px;overflow-y:auto;"></div>
       <button class="btn-outline" id="spx-btn" onclick="atribuirSPX()" disabled style="border-color:#EE4D2D;color:#EE4D2D;margin-top:8px;position:relative">
         <i class="ti ti-brand-shopee"></i> Atribuir no SPX
@@ -513,6 +518,12 @@ textarea{resize:vertical;min-height:90px;}
               <button class="add-entry-btn" id="spx-rev-btn" onclick="atribuirSPXReversao()" style="color:#EE4D2D;border-color:#EE4D2D;position:relative">
                 <i class="ti ti-brand-shopee"></i> Atribuir no SPX
                 <span id="spx-rev-progress" style="display:none;position:absolute;right:10px;font-size:11px"></span>
+              </button>
+              <button class="add-entry-btn" onclick="abrirConfigCookie()" style="color:#ff9800;border-color:#ff9800;font-size:12px">
+                <i class="ti ti-cookie"></i> Cookie SPX
+              </button>
+              <button class="add-entry-btn" onclick="abrirConfigCookie()" style="color:#ff9800;border-color:#ff9800;font-size:12px">
+                <i class="ti ti-cookie"></i> Cookie SPX
               </button>
             </div>
           </div>
@@ -3334,44 +3345,96 @@ const SPX_BASE     = 'https://spx.shopee.com.br';
 const SPX_PRECHECK = SPX_BASE + '/spx_delivery/admin/assignment/assignment_task/pre_check/driver';
 const SPX_REASSIGN = SPX_BASE + '/spx_delivery/admin/assignment/assignment_task/reassign';
 
-function spxLog(msg, cor){
-  const el = document.getElementById('spx-log');
-  if(!el) return;
-  el.style.display = 'block';
-  el.textContent += msg + '\n';
-  el.scrollTop = el.scrollHeight;
+// Cookies SPX — salvos no localStorage para persistir entre sessões
+function getSPXCookie(){ return localStorage.getItem('spx_cookie_str') || ''; }
+function setSPXCookie(v){ localStorage.setItem('spx_cookie_str', v.trim()); }
+
+function spxHeaders(){
+  const cookie = getSPXCookie();
+  const csrf = (cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+  return {
+    'Content-Type':  'application/json',
+    'app':           'FMS Portal',
+    'x-csrftoken':   csrf,
+    'Cookie':        cookie,          // enviado via header (funciona em file://)
+    'user-agent':    navigator.userAgent,
+    'referer':       SPX_BASE + '/',
+    'accept':        'application/json, text/plain, */*',
+  };
 }
 
-function spxProgress(txt){
-  const el = document.getElementById('spx-progress');
+function spxLog(msg){
+  // Tenta logar nos dois elementos (escala e reversão)
+  ['spx-log','spx-rev-log'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && el.style.display !== 'none'){
+      el.textContent += msg + '\n';
+      el.scrollTop = el.scrollHeight;
+    }
+  });
+}
+
+function spxProgress(txt, rev){
+  const id = rev ? 'spx-rev-progress' : 'spx-progress';
+  const el = document.getElementById(id);
   if(el){ el.style.display = txt ? 'inline' : 'none'; el.textContent = txt; }
 }
 
-async function spxPreCheck(atCode, driverId){
-  const r = await fetch(SPX_PRECHECK, {
-    method: 'POST',
-    credentials: 'include',   // usa cookies do browser logado no SPX
-    headers: {'Content-Type':'application/json','app':'FMS Portal'},
-    body: JSON.stringify({driver_id: driverId, assignment_task_id: atCode})
+async function spxFetch(url, body){
+  const cookie = getSPXCookie();
+  if(!cookie) throw new Error('Cookie SPX não configurado — clique em "Configurar Cookie"');
+  const r = await fetch(url, {
+    method:  'POST',
+    mode:    'cors',
+    headers: spxHeaders(),
+    body:    JSON.stringify(body),
   });
-  const d = await r.json();
-  return d.retcode === 0 && d.data && d.data.is_valid;
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+async function spxPreCheck(atCode, driverId){
+  try {
+    const d = await spxFetch(SPX_PRECHECK, {driver_id: driverId, assignment_task_id: atCode});
+    return d.retcode === 0 && d.data && d.data.is_valid;
+  } catch(e) { throw e; }
 }
 
 async function spxReassign(atCode, driverId){
-  const r = await fetch(SPX_REASSIGN, {
-    method: 'POST',
-    credentials: 'include',   // usa cookies do browser logado no SPX
-    headers: {'Content-Type':'application/json','app':'FMS Portal'},
-    body: JSON.stringify({
-      driver_id:                    driverId,
-      assignment_task_id:           atCode,
-      assign_driver_across_station: false,
-      driver_vehicle_id:            ''
-    })
+  const d = await spxFetch(SPX_REASSIGN, {
+    driver_id:                    driverId,
+    assignment_task_id:           atCode,
+    assign_driver_across_station: false,
+    driver_vehicle_id:            '',
   });
-  const d = await r.json();
   return {ok: d.retcode === 0, msg: d.message || '', retcode: d.retcode};
+}
+
+// Modal de configuração do cookie
+function abrirConfigCookie(){
+  const atual = getSPXCookie();
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:12px;padding:28px;width:600px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+      <h3 style="margin:0 0 8px;color:#EE4D2D;font-size:16px">🍪 Cookie SPX</h3>
+      <p style="margin:0 0 16px;font-size:13px;color:#555">
+        Cole o valor do header <b>Cookie:</b> copiado do SPX.<br>
+        <small>F12 → Network → qualquer request → Headers → copie o valor de <b>Cookie:</b></small>
+      </p>
+      <textarea id="cookie-input" rows="5" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:11px;padding:10px;border:1px solid #ddd;border-radius:8px;resize:vertical">${atual}</textarea>
+      <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="padding:8px 20px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer">Cancelar</button>
+        <button onclick="
+          const v=document.getElementById('cookie-input').value.trim();
+          if(!v){alert('Cole o cookie primeiro.');return;}
+          setSPXCookie(v);
+          this.closest('div[style*=fixed]').remove();
+          alert('✅ Cookie salvo! Tente atribuir novamente.');
+        " style="padding:8px 20px;border:none;border-radius:8px;background:#EE4D2D;color:#fff;cursor:pointer;font-weight:600">Salvar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
 }
 
 async function atribuirSPX(){
@@ -3446,10 +3509,8 @@ async function atribuirSPX(){
       logEl3.textContent = logEl3.textContent.trimEnd() + `❌ ${e.message}\n`;
       if(e.message.includes('fetch') || e.message.includes('CORS') || e.message.includes('Failed')){
         spxLog('');
-        spxLog('⚠️  ERRO DE CONEXÃO — verifique:');
-        spxLog('   1. SPX aberto em outra aba deste browser');
-        spxLog('   2. Você está logado no SPX');
-        spxLog('   3. Tente em: chrome://flags → "Block insecure private network" = Disabled');
+        spxLog('⚠️  Cookie inválido ou expirado. Clique em "Cookie SPX" e atualize.');
+        spxLog('   F12 → Network → qualquer req → Headers → copie "Cookie:"');
         break;
       }
       err++;
