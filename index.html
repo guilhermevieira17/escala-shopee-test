@@ -1040,6 +1040,18 @@ async function loadEscala(inp){
     btn.className='file-upload loaded';
     const pi=document.getElementById('pre-info');
     if(pi) pi.textContent=`Ciclos: ${ciclos.join(', ')} — PM1 = SD (tarde), AM = manhã`;
+
+    // Auto-selecionar turno baseado nos ciclos do CSV
+    { const temAM  = ciclos.some(t=>t==='AM');
+      const temSD  = ciclos.some(t=>t==='SD'||t==='PM1');
+      const rAM    = document.querySelector('input[name="turno"][value="AM"]');
+      const rSD    = document.querySelector('input[name="turno"][value="SD"]');
+      const rAmbos = document.querySelector('input[name="turno"][value="AMBOS"]');
+      if(temAM && temSD && rAmbos)      rAmbos.checked = true;
+      else if(temSD && !temAM && rSD)   rSD.checked    = true;
+      else if(temAM && !temSD && rAM)   rAM.checked    = true;
+    }
+
   }catch(e){
     btn.textContent='Erro ao ler arquivo';
     btn.className='file-upload erro';
