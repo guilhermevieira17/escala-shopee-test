@@ -3570,11 +3570,14 @@ async function testarProxy(){
 
     log('✅ Proxy respondeu!', '#2e7d32');
     if(d.proxy_ok && d.spx_ok){
-      log('✅ <b>SPX OK</b> — cookie válido, pronto para atribuir!','#2e7d32');
+      log('✅ <b>Proxy OK + SPX OK</b> — pronto para atribuir!','#2e7d32');
+    } else if(d.proxy_ok && d.msg && d.msg.includes('Cookie não configurado')){
+      log('⚠️ Proxy OK mas <b>cookie não enviado ainda</b>','#e65100');
+      log('→ Cole o cookie no campo abaixo e clique <b>Salvar</b> (isso envia o cookie ao proxy)','#e65100');
     } else if(d.proxy_ok && !d.spx_ok){
-      log(`⚠️ Proxy OK mas SPX retornou erro (retcode=${d.retcode}) — atualize o cookie no proxy`,'#e65100');
+      log(`⚠️ Proxy OK mas SPX rejeitou (retcode=${d.retcode||'?'} msg=${d.msg||''}) — cole o cookie e salve`,'#e65100');
     } else {
-      log('⚠️ Proxy respondeu mas retornou erro: ' + JSON.stringify(d),'#e65100');
+      log('⚠️ Resposta inesperada: ' + JSON.stringify(d),'#e65100');
     }
   } catch(e){
     log('❌ ' + e.message, '#c62828');
@@ -3607,58 +3610,63 @@ async function atribuirSPX(){
   logEl.style.display = 'block'; logEl.textContent = '';
   status.style.display = 'block';
 
-  const setBar = (i, total, okN, errN, skipN) => {
+  const setBar = (i, total, okN, errN) => {
     const pct = Math.round((i/total)*100);
     document.getElementById('spx-bar').style.width = pct + '%';
     document.getElementById('spx-status-pct').textContent = pct + '%';
     document.getElementById('spx-status-label').textContent = `Atribuindo ${i} de ${total}...`;
-    document.getElementById('spx-ok-n').textContent   = okN;
-    document.getElementById('spx-err-n').textContent  = errN;
-    document.getElementById('spx-skip-n').textContent = skipN;
+    document.getElementById('spx-ok-n').textContent  = okN;
+    document.getElementById('spx-err-n').textContent = errN;
     document.getElementById('spx-status-tot').textContent = `${i}/${total}`;
   };
 
-  let ok = 0, err = 0, skip = 0; const erros = [];
-  spxLog(`Iniciando — ${itens.length} atribuições  [${new Date().toLocaleTimeString('pt-BR')}]`);
+  let ok = 0, err = 0; const erros = [];
+  const LOTE = 20; // lote enviado por chamada ao proxy
+  spxLog(`Iniciando — ${itens.length} atribuições em lotes de ${LOTE}  [${new Date().toLocaleTimeString('pt-BR')}]`);
   spxLog('─'.repeat(55));
 
-  for(let i = 0; i < itens.length; i++){
-    const {at, driverObj:{id:did}, driver:nm=''} = itens[i];
-    const didN = parseInt(did);
-    setBar(i, itens.length, ok, err, skip);
-    spxLog(`[${String(i+1).padStart(3,'0')}/${itens.length}] ${at}  ${nm.substring(0,28).padEnd(28)}  ID:${didN}`);
+  for(let i = 0; i < itens.length; i += LOTE){
+    const lote = itens.slice(i, i + LOTE);
+    const payload = lote.map(r => ({at: r.at, driver_id: parseInt(r.driverObj.id)}));
+    setBar(i, itens.length, ok, err);
+    spxLog(`Lote ${Math.floor(i/LOTE)+1}: rotas ${i+1}–${Math.min(i+LOTE, itens.length)}...`);
+
     try {
-      const valido = await spxPreCheck(at, didN);
-      if(!valido){
-        logEl.textContent = logEl.textContent.trimEnd() + ' ⚠️ inválido\n';
-        skip++; erros.push({at, did:didN, nm, erro:'pre_check inválido'});
-        await new Promise(r=>setTimeout(r,300)); continue;
-      }
-      const res = await spxReassign(at, didN);
-      if(res.ok){
-        logEl.textContent = logEl.textContent.trimEnd() + ' ✅\n'; ok++;
-      } else {
-        logEl.textContent = logEl.textContent.trimEnd() + ` ❌ [${res.retcode}] ${res.msg}\n`;
-        err++; erros.push({at, did:didN, nm, erro:res.msg});
+      const d = await jsonp(buildProxyURL('batchlote', {data: JSON.stringify(payload)}));
+      if(d.resultados){
+        d.resultados.forEach((r, idx) => {
+          const nm = lote[idx] ? (lote[idx].driver||'').substring(0,28) : '';
+          if(r.ok){
+            spxLog(`  ✅ ${r.at}  ${nm}`); ok++;
+          } else {
+            spxLog(`  ❌ ${r.at}  [${r.retcode||'?'}] ${r.msg}`); err++;
+            erros.push(r);
+          }
+        });
       }
     } catch(e){
-      logEl.textContent = logEl.textContent.trimEnd() + ` ❌ ${e.message}\n`;
-      if(e.message.includes('fetch')||e.message.includes('Failed')){
-        spxLog(''); spxLog('⚠️  Cookie inválido ou expirado. Clique em "Cookie SPX" e atualize.');
-        err++; break;
+      spxLog(`  ❌ Lote falhou: ${e.message}`);
+      lote.forEach(r => { err++; erros.push({at:r.at, erro:e.message}); });
+      if(e.message.includes('Timeout')||e.message.includes('inacessível')){
+        spxLog('⚠️  Proxy não respondeu. Verifique a conexão.'); break;
       }
-      err++; erros.push({at, did:didN, nm, erro:e.message});
     }
-    await new Promise(r=>setTimeout(r,400));
+
+    setBar(Math.min(i+LOTE, itens.length), itens.length, ok, err);
+    if(i + LOTE < itens.length) await new Promise(r=>setTimeout(r,200));
   }
 
-  // Finalizar barra
-  setBar(itens.length, itens.length, ok, err, skip);
-  document.getElementById('spx-bar').style.background = err>0 ? 'linear-gradient(90deg,#e53935,#ef9a9a)' : 'linear-gradient(90deg,#2e7d32,#66bb6a)';
-  document.getElementById('spx-status-label').textContent = err>0 ? `Concluído com ${err} erro(s)` : '✅ Concluído com sucesso!';
+  // Finalizar
+  setBar(itens.length, itens.length, ok, err);
+  document.getElementById('spx-bar').style.background = err>0
+    ? 'linear-gradient(90deg,#e53935,#ef9a9a)'
+    : 'linear-gradient(90deg,#2e7d32,#66bb6a)';
+  document.getElementById('spx-status-label').textContent = err>0
+    ? `Concluído com ${err} erro(s)`
+    : '✅ Concluído com sucesso!';
   document.getElementById('spx-status-pct').textContent = '100%';
   spxLog('─'.repeat(55));
-  spxLog(`✅ OK: ${ok}  |  ❌ Erro: ${err}  |  ⚠️ Inválido: ${skip}  |  Total: ${itens.length}`);
+  spxLog(`✅ OK: ${ok}  |  ❌ Erro: ${err}  |  Total: ${itens.length}`);
   spxLog(`Concluído em ${new Date().toLocaleTimeString('pt-BR')}`);
   btn.disabled = false;
   btn.innerHTML = `<i class="ti ti-brand-shopee"></i> Atribuir no SPX ${ok>0?'('+ok+' ✅)':''}`;
