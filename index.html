@@ -403,7 +403,7 @@ textarea{resize:vertical;min-height:90px;}
           <i class="ti ti-brand-shopee"></i> Atribuir no SPX
         </button>
         <button class="btn-outline" onclick="abrirConfigCookie()" style="border-color:#ff9800;color:#ff9800;font-size:12px">
-          <i class="ti ti-cookie"></i> Cookie SPX
+          <i class="ti ti-settings"></i> ⚙️ Proxy SPX
         </button>
       </div>
       <!-- Barra de progresso SPX -->
@@ -531,10 +531,10 @@ textarea{resize:vertical;min-height:90px;}
                 <span id="spx-rev-progress" style="display:none;position:absolute;right:10px;font-size:11px"></span>
               </button>
               <button class="add-entry-btn" onclick="abrirConfigCookie()" style="color:#ff9800;border-color:#ff9800;font-size:12px">
-                <i class="ti ti-cookie"></i> Cookie SPX
+                <i class="ti ti-settings"></i> ⚙️ Proxy SPX
               </button>
               <button class="add-entry-btn" onclick="abrirConfigCookie()" style="color:#ff9800;border-color:#ff9800;font-size:12px">
-                <i class="ti ti-cookie"></i> Cookie SPX
+                <i class="ti ti-settings"></i> ⚙️ Proxy SPX
               </button>
             </div>
           </div>
@@ -3368,27 +3368,17 @@ async function exportarRelatorio(){
 }
 
 // ── SPX AUTO-ATRIBUIÇÃO ──────────────────────────────────────────────────────
-const SPX_BASE     = 'https://spx.shopee.com.br';
-const SPX_PRECHECK = SPX_BASE + '/spx_delivery/admin/assignment/assignment_task/pre_check/driver';
-const SPX_REASSIGN = SPX_BASE + '/spx_delivery/admin/assignment/assignment_task/reassign';
+// ── SPX via PROXY (Google Apps Script — sem CORS) ────────────────
+// URL do proxy: deploy do spx_proxy.gs no Apps Script
+// Atualizar aqui após fazer o deploy
+let SPX_PROXY_URL = localStorage.getItem('spx_proxy_url') || '';
 
-// Cookies SPX — salvos no localStorage para persistir entre sessões
+function getSPXProxyURL(){ return localStorage.getItem('spx_proxy_url') || ''; }
+function setSPXProxyURL(v){ localStorage.setItem('spx_proxy_url', v.trim()); }
+
+// Cookie salvo para atualizar no proxy sem precisar redeployar
 function getSPXCookie(){ return localStorage.getItem('spx_cookie_str') || ''; }
 function setSPXCookie(v){ localStorage.setItem('spx_cookie_str', v.trim()); }
-
-function spxHeaders(){
-  const cookie = getSPXCookie();
-  const csrf = (cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
-  return {
-    'Content-Type':  'application/json',
-    'app':           'FMS Portal',
-    'x-csrftoken':   csrf,
-    'Cookie':        cookie,          // enviado via header (funciona em file://)
-    'user-agent':    navigator.userAgent,
-    'referer':       SPX_BASE + '/',
-    'accept':        'application/json, text/plain, */*',
-  };
-}
 
 function spxLog(msg){
   // Tenta logar nos dois elementos (escala e reversão)
@@ -3407,61 +3397,122 @@ function spxProgress(txt, rev){
   if(el){ el.style.display = txt ? 'inline' : 'none'; el.textContent = txt; }
 }
 
-async function spxFetch(url, body){
-  const cookie = getSPXCookie();
-  if(!cookie) throw new Error('Cookie SPX não configurado — clique em "Configurar Cookie"');
+async function spxProxy(action, payload){
+  const url = getSPXProxyURL();
+  if(!url) throw new Error('URL do proxy não configurada — clique em "⚙️ Proxy SPX"');
   const r = await fetch(url, {
     method:  'POST',
-    mode:    'cors',
-    headers: spxHeaders(),
-    body:    JSON.stringify(body),
+    headers: {'Content-Type': 'application/json'},
+    body:    JSON.stringify({action, ...payload}),
   });
   if(!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }
 
 async function spxPreCheck(atCode, driverId){
-  try {
-    const d = await spxFetch(SPX_PRECHECK, {driver_id: driverId, assignment_task_id: atCode});
-    return d.retcode === 0 && d.data && d.data.is_valid;
-  } catch(e) { throw e; }
+  const d = await spxProxy('precheck', {at: atCode, driver_id: driverId});
+  return d.retcode === 0 && d.data && d.data.is_valid;
 }
 
 async function spxReassign(atCode, driverId){
-  const d = await spxFetch(SPX_REASSIGN, {
-    driver_id:                    driverId,
-    assignment_task_id:           atCode,
-    assign_driver_across_station: false,
-    driver_vehicle_id:            '',
-  });
+  const d = await spxProxy('reassign', {at: atCode, driver_id: driverId});
   return {ok: d.retcode === 0, msg: d.message || '', retcode: d.retcode};
 }
 
-// Modal de configuração do cookie
+async function spxBatch(itens){
+  // Envia toda a lista de uma vez — mais rápido, delay gerenciado no proxy
+  const d = await spxProxy('batch', {itens});
+  return d.resultados || [];
+}
+
+async function spxPing(){
+  try {
+    const d = await spxProxy('ping', {});
+    return d;
+  } catch(e) { return {proxy_ok: false, msg: e.message}; }
+}
+
+// Modal de configuração do proxy + cookie
 function abrirConfigCookie(){
-  const atual = getSPXCookie();
-  const modal = document.createElement('div');
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center';
+  const cookie = getSPXCookie();
+  const proxy  = getSPXProxyURL();
+  const modal  = document.createElement('div');
+  modal.id = 'spx-config-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center';
   modal.innerHTML = `
-    <div style="background:#fff;border-radius:12px;padding:28px;width:600px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-      <h3 style="margin:0 0 8px;color:#EE4D2D;font-size:16px">🍪 Cookie SPX</h3>
-      <p style="margin:0 0 16px;font-size:13px;color:#555">
-        Cole o valor do header <b>Cookie:</b> copiado do SPX.<br>
-        <small>F12 → Network → qualquer request → Headers → copie o valor de <b>Cookie:</b></small>
+    <div style="background:#fff;border-radius:14px;padding:28px;width:640px;max-width:96vw;box-shadow:0 24px 64px rgba(0,0,0,.35)">
+      <h3 style="margin:0 0 4px;color:#EE4D2D;font-size:17px">⚙️ Configuração SPX</h3>
+      <p style="margin:0 0 20px;font-size:12px;color:#888">Configure uma vez — fica salvo no browser</p>
+
+      <label style="font-size:13px;font-weight:600;color:#333;display:block;margin-bottom:6px">
+        🔗 URL do Proxy (Google Apps Script)
+      </label>
+      <input id="proxy-input" type="text" placeholder="https://script.google.com/macros/s/.../exec"
+        value="${proxy}"
+        style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;padding:9px 12px;border:1px solid #ddd;border-radius:8px;margin-bottom:6px"/>
+      <p style="font-size:11px;color:#888;margin:0 0 16px">
+        Deploy do <b>spx_proxy.gs</b> no Google Apps Script → Implantar → Web App → copie a URL
       </p>
-      <textarea id="cookie-input" rows="5" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:11px;padding:10px;border:1px solid #ddd;border-radius:8px;resize:vertical">${atual}</textarea>
-      <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">
-        <button onclick="this.closest('div[style*=fixed]').remove()" style="padding:8px 20px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer">Cancelar</button>
-        <button onclick="
-          const v=document.getElementById('cookie-input').value.trim();
-          if(!v){alert('Cole o cookie primeiro.');return;}
-          setSPXCookie(v);
-          this.closest('div[style*=fixed]').remove();
-          alert('✅ Cookie salvo! Tente atribuir novamente.');
-        " style="padding:8px 20px;border:none;border-radius:8px;background:#EE4D2D;color:#fff;cursor:pointer;font-weight:600">Salvar</button>
+
+      <label style="font-size:13px;font-weight:600;color:#333;display:block;margin-bottom:6px">
+        🍪 Cookie SPX
+      </label>
+      <textarea id="cookie-input" rows="4" placeholder="SPC_CLIENTID=... SPC_F=... csrftoken=..."
+        style="width:100%;box-sizing:border-box;font-family:monospace;font-size:10px;padding:9px 12px;border:1px solid #ddd;border-radius:8px;resize:vertical;margin-bottom:4px">${cookie}</textarea>
+      <p style="font-size:11px;color:#888;margin:0 0 20px">
+        F12 → Network → qualquer request SPX → Headers → copie o valor de <b>Cookie:</b>
+        <br>O cookie é atualizado no proxy automaticamente ao salvar.
+      </p>
+
+      <div style="display:flex;gap:10px;justify-content:space-between;align-items:center">
+        <button id="spx-ping-btn" onclick="testarProxy()" style="padding:8px 16px;border:1px solid #EE4D2D;border-radius:8px;background:#fff;color:#EE4D2D;cursor:pointer;font-size:13px">
+          🔍 Testar conexão
+        </button>
+        <div style="display:flex;gap:10px">
+          <button onclick="document.getElementById('spx-config-modal').remove()" style="padding:8px 20px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer">Cancelar</button>
+          <button onclick="salvarConfigSPX()" style="padding:8px 24px;border:none;border-radius:8px;background:#EE4D2D;color:#fff;cursor:pointer;font-weight:700;font-size:14px">Salvar</button>
+        </div>
       </div>
+      <div id="spx-ping-result" style="margin-top:12px;font-size:12px;display:none"></div>
     </div>`;
   document.body.appendChild(modal);
+}
+
+function salvarConfigSPX(){
+  const proxy  = document.getElementById('proxy-input').value.trim();
+  const cookie = document.getElementById('cookie-input').value.trim();
+  if(!proxy){ alert('Cole a URL do proxy primeiro.'); return; }
+  setSPXProxyURL(proxy);
+  if(cookie) setSPXCookie(cookie);
+  document.getElementById('spx-config-modal').remove();
+  alert('✅ Configuração salva!');
+}
+
+async function testarProxy(){
+  const btn = document.getElementById('spx-ping-btn');
+  const res = document.getElementById('spx-ping-result');
+  btn.textContent = '⏳ Testando...';
+  btn.disabled = true;
+  res.style.display = 'block';
+  res.textContent = 'Conectando...';
+  try {
+    const d = await spxPing();
+    if(d.proxy_ok && d.spx_ok){
+      res.innerHTML = '✅ <b>Proxy OK + SPX OK</b> — tudo pronto para atribuir!';
+      res.style.color = '#2e7d32';
+    } else if(d.proxy_ok && !d.spx_ok){
+      res.innerHTML = '⚠️ <b>Proxy OK</b> mas SPX retornou erro — cookie pode ter expirado.';
+      res.style.color = '#e65100';
+    } else {
+      res.innerHTML = '❌ Proxy não respondeu — verifique a URL.';
+      res.style.color = '#c62828';
+    }
+  } catch(e){
+    res.innerHTML = '❌ ' + e.message;
+    res.style.color = '#c62828';
+  }
+  btn.textContent = '🔍 Testar conexão';
+  btn.disabled = false;
 }
 
 async function atribuirSPX(){
@@ -3471,7 +3522,7 @@ async function atribuirSPX(){
     r.status !== 'sem_driver'
   );
   if(!itens.length){ alert('Nenhuma rota com AT e ID Driver.\nGere a escala primeiro.'); return; }
-  if(!getSPXCookie()){ abrirConfigCookie(); return; }
+  if(!getSPXProxyURL()){ abrirConfigCookie(); return; }
   if(!confirm(`Atribuir ${itens.length} drivers no SPX?\n\nClique OK para iniciar.`)) return;
 
   const btn    = document.getElementById('spx-btn');
