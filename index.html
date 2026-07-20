@@ -3415,9 +3415,12 @@ function jsonp(url){
 }
 
 function buildProxyURL(action, params){
-  const base = getSPXProxyURL();
+  const base   = getSPXProxyURL();
   if(!base) throw new Error('URL do proxy não configurada — clique em "⚙️ Proxy SPX"');
-  const qs = Object.entries({action, ...params})
+  const cookie = getSPXCookie();
+  // Cookie enviado como parâmetro — proxy não precisa ter cookie hardcoded
+  const all = {action, cookie, ...params};
+  const qs  = Object.entries(all)
     .map(([k,v]) => k + '=' + encodeURIComponent(v))
     .join('&');
   return base + '?' + qs;
@@ -3504,25 +3507,50 @@ function salvarConfigSPX(){
 async function testarProxy(){
   const btn = document.getElementById('spx-ping-btn');
   const res = document.getElementById('spx-ping-result');
+  const url = document.getElementById('proxy-input').value.trim() || getSPXProxyURL();
   btn.textContent = '⏳ Testando...';
   btn.disabled = true;
   res.style.display = 'block';
-  res.textContent = 'Conectando...';
+
+  // Diagnóstico passo a passo
+  const log = (msg, cor='#333') => { res.innerHTML += `<div style="color:${cor};margin:2px 0">${msg}</div>`; };
+  res.innerHTML = '';
+
+  if(!url){ log('❌ URL do proxy em branco — cole a URL do Apps Script','#c62828'); btn.textContent='🔍 Testar conexão'; btn.disabled=false; return; }
+  log(`🔗 URL: <code style="font-size:10px">${url}</code>`);
+  log('⏳ Chamando proxy via JSONP...');
+
   try {
-    const d = await spxPing();
+    // Teste JSONP direto sem usar getSPXProxyURL (usa o valor do campo atual)
+    const d = await new Promise((resolve, reject) => {
+      const cbName = 'spxcb_test_' + Date.now();
+      const script = document.createElement('script');
+      const timer = setTimeout(() => {
+        delete window[cbName]; script.remove();
+        reject(new Error('Timeout 15s — proxy não respondeu. Verifique:<br>1. URL correta?<br>2. Deploy como Web App com acesso "Qualquer pessoa"?<br>3. Código novo (doGet com JSONP)?'));
+      }, 15000);
+      window[cbName] = (data) => { clearTimeout(timer); delete window[cbName]; script.remove(); resolve(data); };
+      script.src = url + (url.includes('?')?'&':'?') + 'action=ping&callback=' + cbName;
+      script.onerror = () => { clearTimeout(timer); delete window[cbName]; script.remove(); reject(new Error('Script bloqueado — URL inválida ou proxy offline')); };
+      document.head.appendChild(script);
+    });
+
+    log('✅ Proxy respondeu!', '#2e7d32');
     if(d.proxy_ok && d.spx_ok){
-      res.innerHTML = '✅ <b>Proxy OK + SPX OK</b> — tudo pronto para atribuir!';
-      res.style.color = '#2e7d32';
+      log('✅ <b>SPX OK</b> — cookie válido, pronto para atribuir!','#2e7d32');
     } else if(d.proxy_ok && !d.spx_ok){
-      res.innerHTML = '⚠️ <b>Proxy OK</b> mas SPX retornou erro — cookie pode ter expirado.';
-      res.style.color = '#e65100';
+      log(`⚠️ Proxy OK mas SPX retornou erro (retcode=${d.retcode}) — atualize o cookie no proxy`,'#e65100');
     } else {
-      res.innerHTML = '❌ Proxy não respondeu — verifique a URL.';
-      res.style.color = '#c62828';
+      log('⚠️ Proxy respondeu mas retornou erro: ' + JSON.stringify(d),'#e65100');
     }
   } catch(e){
-    res.innerHTML = '❌ ' + e.message;
-    res.style.color = '#c62828';
+    log('❌ ' + e.message, '#c62828');
+    log('','');
+    log('<b>Dicas:</b>','#666');
+    log('1. No Apps Script: cole o código do <b>spx_proxy.gs</b> novo (com JSONP/doGet)','#666');
+    log('2. Crie um <b>Novo implante</b> (não edite o existente)','#666');
+    log('3. Acesso: <b>Qualquer pessoa (anônimo)</b>','#666');
+    log('4. Cole a <b>nova URL</b> gerada pelo novo deploy','#666');
   }
   btn.textContent = '🔍 Testar conexão';
   btn.disabled = false;
