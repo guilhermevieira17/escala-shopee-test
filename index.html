@@ -3404,8 +3404,8 @@ function jsonp(url){
     const script = document.createElement('script');
     const timer  = setTimeout(() => {
       cleanup();
-      reject(new Error('Timeout — proxy não respondeu em 15s'));
-    }, 15000);
+      reject(new Error('Timeout — proxy não respondeu em 30s'));
+    }, 30000);
     function cleanup(){ clearTimeout(timer); delete window[cbName]; script.remove(); }
     window[cbName] = (data) => { cleanup(); resolve(data); };
     script.src = url + '&callback=' + cbName;
@@ -3415,15 +3415,33 @@ function jsonp(url){
 }
 
 function buildProxyURL(action, params){
-  const base   = getSPXProxyURL();
+  const base = getSPXProxyURL();
   if(!base) throw new Error('URL do proxy não configurada — clique em "⚙️ Proxy SPX"');
-  const cookie = getSPXCookie();
-  // Cookie enviado como parâmetro — proxy não precisa ter cookie hardcoded
-  const all = {action, cookie, ...params};
-  const qs  = Object.entries(all)
+  // Cookie fica salvo no PropertiesService do proxy — não enviado na URL
+  const qs = Object.entries({action, ...params})
     .map(([k,v]) => k + '=' + encodeURIComponent(v))
     .join('&');
   return base + '?' + qs;
+}
+
+// Envia cookie para o PropertiesService do proxy via setcookie
+async function enviarCookieAoProxy(cookie){
+  const base = getSPXProxyURL();
+  if(!base || !cookie) return false;
+  return new Promise((resolve) => {
+    const cbName = 'spxcb_sc_' + Date.now();
+    const script = document.createElement('script');
+    const timer  = setTimeout(() => { delete window[cbName]; script.remove(); resolve(false); }, 20000);
+    window[cbName] = (d) => {
+      clearTimeout(timer); delete window[cbName]; script.remove();
+      resolve(d.ok === true);
+    };
+    // Envia em chunks se necessário — cookie completo via setcookie
+    script.src = base + '?action=setcookie&secret=shopee2026&callback=' + cbName
+               + '&cookie=' + encodeURIComponent(cookie);
+    script.onerror = () => { clearTimeout(timer); delete window[cbName]; script.remove(); resolve(false); };
+    document.head.appendChild(script);
+  });
 }
 
 async function spxPreCheck(atCode, driverId){
@@ -3494,14 +3512,29 @@ function abrirConfigCookie(){
   document.body.appendChild(modal);
 }
 
-function salvarConfigSPX(){
+async function salvarConfigSPX(){
   const proxy  = document.getElementById('proxy-input').value.trim();
   const cookie = document.getElementById('cookie-input').value.trim();
   if(!proxy){ alert('Cole a URL do proxy primeiro.'); return; }
   setSPXProxyURL(proxy);
   if(cookie) setSPXCookie(cookie);
-  document.getElementById('spx-config-modal').remove();
-  alert('✅ Configuração salva!');
+
+  const btn = document.querySelector('#spx-config-modal button[onclick="salvarConfigSPX()"]');
+  if(btn){ btn.textContent = '⏳ Enviando cookie...'; btn.disabled = true; }
+
+  // Enviar cookie ao PropertiesService do proxy
+  if(cookie){
+    const ok = await enviarCookieAoProxy(cookie);
+    document.getElementById('spx-config-modal').remove();
+    if(ok){
+      alert('✅ Configuração salva e cookie enviado ao proxy!\nClique em "Testar conexão" para confirmar.');
+    } else {
+      alert('⚠️  Configuração salva localmente, mas não consegui enviar o cookie ao proxy.\nTente "Testar conexão" mesmo assim.');
+    }
+  } else {
+    document.getElementById('spx-config-modal').remove();
+    alert('✅ URL salva! Cole o cookie e salve novamente para ativar.');
+  }
 }
 
 async function testarProxy(){
@@ -3527,8 +3560,8 @@ async function testarProxy(){
       const script = document.createElement('script');
       const timer = setTimeout(() => {
         delete window[cbName]; script.remove();
-        reject(new Error('Timeout 15s — proxy não respondeu. Verifique:<br>1. URL correta?<br>2. Deploy como Web App com acesso "Qualquer pessoa"?<br>3. Código novo (doGet com JSONP)?'));
-      }, 15000);
+        reject(new Error('Timeout 30s — proxy não respondeu. Verifique:<br>1. URL correta?<br>2. Deploy como Web App com acesso "Qualquer pessoa"?<br>3. Código novo (doGet com JSONP)?'));
+      }, 30000);
       window[cbName] = (data) => { clearTimeout(timer); delete window[cbName]; script.remove(); resolve(data); };
       script.src = url + (url.includes('?')?'&':'?') + 'action=ping&callback=' + cbName;
       script.onerror = () => { clearTimeout(timer); delete window[cbName]; script.remove(); reject(new Error('Script bloqueado — URL inválida ou proxy offline')); };
