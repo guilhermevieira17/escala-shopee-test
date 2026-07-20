@@ -397,21 +397,32 @@ textarea{resize:vertical;min-height:90px;}
       </button>
       <div id="debug-output" style="display:none;margin-top:10px;background:#1a1a2e;color:#00ff88;font-family:monospace;font-size:12px;padding:14px;border-radius:8px;white-space:pre-wrap;max-height:300px;overflow-y:auto;"></div>
       <button class="btn-outline" id="export-btn" onclick="exportarTudo()" disabled><i class="ti ti-file-spreadsheet"></i> Exportar tudo para Excel (.xlsx)</button>
+      <!-- SPX Atribuição -->
       <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">
-        <button class="btn-outline" id="spx-btn" onclick="atribuirSPX()" disabled style="border-color:#EE4D2D;color:#EE4D2D;position:relative">
+        <button class="btn-outline" id="spx-btn" onclick="atribuirSPX()" disabled style="border-color:#EE4D2D;color:#EE4D2D">
           <i class="ti ti-brand-shopee"></i> Atribuir no SPX
-          <span id="spx-progress" style="display:none;position:absolute;right:10px;font-size:11px"></span>
         </button>
         <button class="btn-outline" onclick="abrirConfigCookie()" style="border-color:#ff9800;color:#ff9800;font-size:12px">
           <i class="ti ti-cookie"></i> Cookie SPX
         </button>
       </div>
+      <!-- Barra de progresso SPX -->
+      <div id="spx-status" style="display:none;margin-top:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span id="spx-status-label" style="font-size:12px;font-weight:600;color:#333"></span>
+          <span id="spx-status-pct" style="font-size:12px;color:#EE4D2D;font-weight:700"></span>
+        </div>
+        <div style="background:#eee;border-radius:99px;height:10px;overflow:hidden">
+          <div id="spx-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#EE4D2D,#ff7043);border-radius:99px;transition:width .3s ease"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px">
+          <span id="spx-status-ok"  style="font-size:11px;color:#2e7d32">✅ <span id="spx-ok-n">0</span> OK</span>
+          <span id="spx-status-err" style="font-size:11px;color:#c62828">❌ <span id="spx-err-n">0</span> erro</span>
+          <span id="spx-status-skip" style="font-size:11px;color:#e65100">⚠️ <span id="spx-skip-n">0</span> inválido</span>
+          <span id="spx-status-tot" style="font-size:11px;color:#666"></span>
+        </div>
+      </div>
       <div id="spx-log" style="display:none;margin-top:8px;background:#1a1a2e;color:#00ff88;font-family:monospace;font-size:11px;padding:12px;border-radius:8px;white-space:pre-wrap;max-height:180px;overflow-y:auto;"></div>
-      <button class="btn-outline" id="spx-btn" onclick="atribuirSPX()" disabled style="border-color:#EE4D2D;color:#EE4D2D;margin-top:8px;position:relative">
-        <i class="ti ti-brand-shopee"></i> Atribuir no SPX
-        <span id="spx-progress" style="display:none;position:absolute;right:12px;font-size:11px;color:#EE4D2D"></span>
-      </button>
-      <div id="spx-log" style="display:none;margin-top:8px;background:#1a1a2e;color:#00ff88;font-family:monospace;font-size:11px;padding:12px;border-radius:8px;white-space:pre-wrap;max-height:200px;overflow-y:auto;"></div>
 
       <!-- RESULTS -->
       <div class="results card" id="results" style="display:none;margin-top:16px;">
@@ -527,6 +538,22 @@ textarea{resize:vertical;min-height:90px;}
               </button>
             </div>
           </div>
+      <!-- Barra de progresso SPX Reversão -->
+      <div id="spx-rev-status" style="display:none;margin-top:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span id="spx-rev-status-label" style="font-size:12px;font-weight:600;color:#333"></span>
+          <span id="spx-rev-status-pct" style="font-size:12px;color:#EE4D2D;font-weight:700"></span>
+        </div>
+        <div style="background:#eee;border-radius:99px;height:10px;overflow:hidden">
+          <div id="spx-rev-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#EE4D2D,#ff7043);border-radius:99px;transition:width .3s ease"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px">
+          <span style="font-size:11px;color:#2e7d32">✅ <span id="spx-rev-ok-n">0</span> OK</span>
+          <span style="font-size:11px;color:#c62828">❌ <span id="spx-rev-err-n">0</span> erro</span>
+          <span style="font-size:11px;color:#e65100">⚠️ <span id="spx-rev-skip-n">0</span> inválido</span>
+          <span id="spx-rev-status-tot" style="font-size:11px;color:#666"></span>
+        </div>
+      </div>
           <div id="spx-rev-log" style="display:none;margin:8px 0;background:#1a1a2e;color:#00ff88;font-family:monospace;font-size:11px;padding:12px;border-radius:8px;white-space:pre-wrap;max-height:180px;overflow-y:auto;"></div>
           <div class="results-stats" id="reversao-stats"></div>
 
@@ -3438,95 +3465,76 @@ function abrirConfigCookie(){
 }
 
 async function atribuirSPX(){
-  // Coletar ATs com driver alocado
   const itens = allRows.filter(r =>
     r.at && r.at.startsWith('AT') &&
     r.driverObj && r.driverObj.id &&
     r.status !== 'sem_driver'
   );
+  if(!itens.length){ alert('Nenhuma rota com AT e ID Driver.\nGere a escala primeiro.'); return; }
+  if(!getSPXCookie()){ abrirConfigCookie(); return; }
+  if(!confirm(`Atribuir ${itens.length} drivers no SPX?\n\nClique OK para iniciar.`)) return;
 
-  if(!itens.length){
-    alert('Nenhuma rota com AT e ID Driver encontrada.\nGere a escala primeiro.');
-    return;
-  }
-
-  const confirma = confirm(
-    `Atribuir ${itens.length} drivers no SPX?\n\n` +
-    `⚠️  Você precisa estar logado no SPX no mesmo browser.\n\n` +
-    `Clique OK para iniciar.`
-  );
-  if(!confirma) return;
-
-  const btn = document.getElementById('spx-btn');
+  const btn    = document.getElementById('spx-btn');
+  const logEl  = document.getElementById('spx-log');
+  const status = document.getElementById('spx-status');
   btn.disabled = true;
   btn.innerHTML = '<i class="ti ti-loader"></i> Atribuindo...';
+  logEl.style.display = 'block'; logEl.textContent = '';
+  status.style.display = 'block';
 
-  const logEl = document.getElementById('spx-log');
-  logEl.textContent = '';
+  const setBar = (i, total, okN, errN, skipN) => {
+    const pct = Math.round((i/total)*100);
+    document.getElementById('spx-bar').style.width = pct + '%';
+    document.getElementById('spx-status-pct').textContent = pct + '%';
+    document.getElementById('spx-status-label').textContent = `Atribuindo ${i} de ${total}...`;
+    document.getElementById('spx-ok-n').textContent   = okN;
+    document.getElementById('spx-err-n').textContent  = errN;
+    document.getElementById('spx-skip-n').textContent = skipN;
+    document.getElementById('spx-status-tot').textContent = `${i}/${total}`;
+  };
+
+  let ok = 0, err = 0, skip = 0; const erros = [];
   spxLog(`Iniciando — ${itens.length} atribuições  [${new Date().toLocaleTimeString('pt-BR')}]`);
   spxLog('─'.repeat(55));
 
-  let ok = 0, err = 0, skip = 0;
-  const erros = [];
-
   for(let i = 0; i < itens.length; i++){
-    const item = itens[i];
-    const at   = item.at;
-    const did  = parseInt(item.driverObj.id);
-    const nm   = item.driver || '';
-    const label = `[${String(i+1).padStart(3,'0')}/${itens.length}]`;
-
-    spxProgress(`${i+1}/${itens.length}`);
-    spxLog(`${label} ${at}  ${nm.substring(0,30).padEnd(30)}  ID:${did}  ... `, false);
-
+    const {at, driverObj:{id:did}, driver:nm=''} = itens[i];
+    const didN = parseInt(did);
+    setBar(i, itens.length, ok, err, skip);
+    spxLog(`[${String(i+1).padStart(3,'0')}/${itens.length}] ${at}  ${nm.substring(0,28).padEnd(28)}  ID:${didN}`);
     try {
-      // 1. Pre-check
-      const valido = await spxPreCheck(at, did);
+      const valido = await spxPreCheck(at, didN);
       if(!valido){
-        const logEl = document.getElementById('spx-log');
-        logEl.textContent = logEl.textContent.trimEnd() + '⚠️ inválido\n';
-        skip++;
-        erros.push({at, did, nm, erro: 'pre_check inválido'});
-        await new Promise(r => setTimeout(r, 300));
-        continue;
+        logEl.textContent = logEl.textContent.trimEnd() + ' ⚠️ inválido\n';
+        skip++; erros.push({at, did:didN, nm, erro:'pre_check inválido'});
+        await new Promise(r=>setTimeout(r,300)); continue;
       }
-
-      // 2. Reassign
-      const res = await spxReassign(at, did);
-      const logEl2 = document.getElementById('spx-log');
+      const res = await spxReassign(at, didN);
       if(res.ok){
-        logEl2.textContent = logEl2.textContent.trimEnd() + '✅\n';
-        ok++;
+        logEl.textContent = logEl.textContent.trimEnd() + ' ✅\n'; ok++;
       } else {
-        logEl2.textContent = logEl2.textContent.trimEnd() + `❌ [${res.retcode}] ${res.msg}\n`;
-        err++;
-        erros.push({at, did, nm, erro: res.msg, retcode: res.retcode});
+        logEl.textContent = logEl.textContent.trimEnd() + ` ❌ [${res.retcode}] ${res.msg}\n`;
+        err++; erros.push({at, did:didN, nm, erro:res.msg});
       }
-
     } catch(e){
-      // CORS error — SPX não está aberto no browser
-      const logEl3 = document.getElementById('spx-log');
-      logEl3.textContent = logEl3.textContent.trimEnd() + `❌ ${e.message}\n`;
-      if(e.message.includes('fetch') || e.message.includes('CORS') || e.message.includes('Failed')){
-        spxLog('');
-        spxLog('⚠️  Cookie inválido ou expirado. Clique em "Cookie SPX" e atualize.');
-        spxLog('   F12 → Network → qualquer req → Headers → copie "Cookie:"');
-        break;
+      logEl.textContent = logEl.textContent.trimEnd() + ` ❌ ${e.message}\n`;
+      if(e.message.includes('fetch')||e.message.includes('Failed')){
+        spxLog(''); spxLog('⚠️  Cookie inválido ou expirado. Clique em "Cookie SPX" e atualize.');
+        err++; break;
       }
-      err++;
-      erros.push({at, did, nm, erro: e.message});
+      err++; erros.push({at, did:didN, nm, erro:e.message});
     }
-
-    logEl.scrollTop = logEl.scrollHeight;
-    await new Promise(r => setTimeout(r, 400)); // delay entre requisições
+    await new Promise(r=>setTimeout(r,400));
   }
 
-  // Resultado final
+  // Finalizar barra
+  setBar(itens.length, itens.length, ok, err, skip);
+  document.getElementById('spx-bar').style.background = err>0 ? 'linear-gradient(90deg,#e53935,#ef9a9a)' : 'linear-gradient(90deg,#2e7d32,#66bb6a)';
+  document.getElementById('spx-status-label').textContent = err>0 ? `Concluído com ${err} erro(s)` : '✅ Concluído com sucesso!';
+  document.getElementById('spx-status-pct').textContent = '100%';
   spxLog('─'.repeat(55));
   spxLog(`✅ OK: ${ok}  |  ❌ Erro: ${err}  |  ⚠️ Inválido: ${skip}  |  Total: ${itens.length}`);
   spxLog(`Concluído em ${new Date().toLocaleTimeString('pt-BR')}`);
-
-  spxProgress('');
   btn.disabled = false;
   btn.innerHTML = `<i class="ti ti-brand-shopee"></i> Atribuir no SPX ${ok>0?'('+ok+' ✅)':''}`;
 }
