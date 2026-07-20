@@ -3397,39 +3397,52 @@ function spxProgress(txt, rev){
   if(el){ el.style.display = txt ? 'inline' : 'none'; el.textContent = txt; }
 }
 
-async function spxProxy(action, payload){
-  const url = getSPXProxyURL();
-  if(!url) throw new Error('URL do proxy não configurada — clique em "⚙️ Proxy SPX"');
-  const r = await fetch(url, {
-    method:  'POST',
-    headers: {'Content-Type': 'application/json'},
-    body:    JSON.stringify({action, ...payload}),
+// JSONP helper — contorna CORS sem preflight
+function jsonp(url){
+  return new Promise((resolve, reject) => {
+    const cbName = 'spxcb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const script = document.createElement('script');
+    const timer  = setTimeout(() => {
+      cleanup();
+      reject(new Error('Timeout — proxy não respondeu em 15s'));
+    }, 15000);
+    function cleanup(){ clearTimeout(timer); delete window[cbName]; script.remove(); }
+    window[cbName] = (data) => { cleanup(); resolve(data); };
+    script.src = url + '&callback=' + cbName;
+    script.onerror = () => { cleanup(); reject(new Error('Proxy inacessível — verifique a URL')); };
+    document.head.appendChild(script);
   });
-  if(!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
+}
+
+function buildProxyURL(action, params){
+  const base = getSPXProxyURL();
+  if(!base) throw new Error('URL do proxy não configurada — clique em "⚙️ Proxy SPX"');
+  const qs = Object.entries({action, ...params})
+    .map(([k,v]) => k + '=' + encodeURIComponent(v))
+    .join('&');
+  return base + '?' + qs;
 }
 
 async function spxPreCheck(atCode, driverId){
-  const d = await spxProxy('precheck', {at: atCode, driver_id: driverId});
+  const d = await jsonp(buildProxyURL('precheck', {at: atCode, driver_id: driverId}));
   return d.retcode === 0 && d.data && d.data.is_valid;
 }
 
 async function spxReassign(atCode, driverId){
-  const d = await spxProxy('reassign', {at: atCode, driver_id: driverId});
+  const d = await jsonp(buildProxyURL('reassign', {at: atCode, driver_id: driverId}));
   return {ok: d.retcode === 0, msg: d.message || '', retcode: d.retcode};
 }
 
 async function spxBatch(itens){
-  // Envia toda a lista de uma vez — mais rápido, delay gerenciado no proxy
-  const d = await spxProxy('batch', {itens});
+  const d = await jsonp(buildProxyURL('batch', {data: JSON.stringify(itens)}));
   return d.resultados || [];
 }
 
 async function spxPing(){
   try {
-    const d = await spxProxy('ping', {});
+    const d = await jsonp(buildProxyURL('ping', {}));
     return d;
-  } catch(e) { return {proxy_ok: false, msg: e.message}; }
+  } catch(e){ return {proxy_ok: false, msg: e.message}; }
 }
 
 // Modal de configuração do proxy + cookie
