@@ -3719,66 +3719,46 @@ async function atribuirSPXReversao(){
     if(el){ el.style.display = txt ? 'inline' : 'none'; el.textContent = txt; }
   };
 
-  log(`Reversão no-show — ${itens.length} atribuições  [${new Date().toLocaleTimeString('pt-BR')}]`);
+  const LOTE = 20;
+  let ok = 0, err = 0; const erros = [];
+  log(`Reversão no-show — ${itens.length} atribuições em lotes de ${LOTE}  [${new Date().toLocaleTimeString('pt-BR')}]`);
   log('─'.repeat(55));
 
-  let ok = 0, err = 0, skip = 0;
-  const erros = [];
-
-  for(let i = 0; i < itens.length; i++){
-    const item = itens[i];
-    const at   = item.at;
-    const did  = parseInt(item.driverObj.id);
-    const nm   = item.driver || '';
-    const orig = item.originalDriver || '–';
-    const label = `[${String(i+1).padStart(3,'0')}/${itens.length}]`;
-
-    prog(`${i+1}/${itens.length}`);
-    log(`${label} ${at}  ${nm.substring(0,28).padEnd(28)}  ID:${did}  ... `);
+  for(let i = 0; i < itens.length; i += LOTE){
+    const lote    = itens.slice(i, i + LOTE);
+    const payload = lote.map(r => ({at: r.at, driver_id: parseInt(r.driverObj.id)}));
+    log(`Lote ${Math.floor(i/LOTE)+1}: rotas ${i+1}–${Math.min(i+LOTE, itens.length)}...`);
 
     try {
-      // Pre-check
-      const valido = await spxPreCheck(at, did);
-      if(!valido){
-        logEl.textContent = logEl.textContent.trimEnd() + '⚠️ inválido\n';
-        skip++;
-        erros.push({at, did, nm, orig, erro: 'pre_check inválido'});
-        await new Promise(r => setTimeout(r, 300));
-        continue;
-      }
-
-      // Reassign
-      const res = await spxReassign(at, did);
-      if(res.ok){
-        logEl.textContent = logEl.textContent.trimEnd() + '✅\n';
-        ok++;
+      const d = await jsonp(buildProxyURL('batchlote', {data: JSON.stringify(payload)}));
+      if(d.ok === false){
+        log(`  ⚠️  Proxy: ${d.msg}`);
+        if(d.msg && d.msg.includes('inválida')){ log('  → Atualize o spx_proxy.gs v5'); break; }
+      } else if(d.resultados){
+        d.resultados.forEach((r, idx) => {
+          const nm   = lote[idx] ? (lote[idx].driver||'').substring(0,25) : '';
+          const orig = lote[idx] ? (lote[idx].originalDriver||'–').substring(0,20) : '';
+          if(r.ok){ log(`  ✅ ${r.at}  ${nm}  (era: ${orig})`); ok++; }
+          else     { log(`  ❌ ${r.at}  [${r.retcode||'?'}] ${r.msg}`); err++; erros.push(r); }
+        });
       } else {
-        logEl.textContent = logEl.textContent.trimEnd() + `❌ [${res.retcode}] ${res.msg}\n`;
-        err++;
-        erros.push({at, did, nm, orig, erro: res.msg});
+        log(`  ⚠️  Resposta inesperada: ${JSON.stringify(d).substring(0,100)}`);
       }
-
     } catch(e){
-      logEl.textContent = logEl.textContent.trimEnd() + `❌ ${e.message}\n`;
-      if(e.message.includes('fetch') || e.message.includes('Failed') || e.message.includes('CORS')){
-        log('');
-        log('⚠️  ERRO DE CONEXÃO — verifique:');
-        log('   1. SPX aberto em outra aba deste browser');
-        log('   2. Você está logado no SPX');
-        break;
+      log(`  ❌ Lote falhou: ${e.message}`);
+      lote.forEach(r => { err++; erros.push({at:r.at, erro:e.message}); });
+      if(e.message.includes('Timeout')||e.message.includes('inacessível')){
+        log('⚠️  Proxy não respondeu.'); break;
       }
-      err++;
-      erros.push({at, did, nm, orig, erro: e.message});
     }
 
     logEl.scrollTop = logEl.scrollHeight;
-    await new Promise(r => setTimeout(r, 400));
+    if(i + LOTE < itens.length) await new Promise(r=>setTimeout(r,200));
   }
 
   log('─'.repeat(55));
-  log(`✅ OK: ${ok}  |  ❌ Erro: ${err}  |  ⚠️ Inválido: ${skip}  |  Total: ${itens.length}`);
+  log(`✅ OK: ${ok}  |  ❌ Erro: ${err}  |  Total: ${itens.length}`);
   log(`Concluído em ${new Date().toLocaleTimeString('pt-BR')}`);
-
   prog('');
   btn.disabled = false;
   btn.innerHTML = `<i class="ti ti-brand-shopee"></i> Atribuir no SPX ${ok>0?'('+ok+' ✅)':''}`;
