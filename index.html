@@ -507,7 +507,25 @@ textarea{resize:vertical;min-height:90px;}
               <div class="turno-option"><input type="radio" name="turno-rev" value="SD" id="rev-sd"><label for="rev-sd"><i class="ti ti-moon" style="font-size:13px"></i>&nbsp;SD</label></div>
             </div>
           </div>
-          <button class="btn-primary" style="max-width:280px" onclick="gerarReversao()">
+
+          <!-- IDs disponíveis para no-show (vindos do formulário) -->
+          <div style="margin-bottom:14px;padding:14px;background:#F3F8FF;border-radius:10px;border:1px solid #BBDEFB">
+            <label class="field-label" style="color:#1565C0">
+              <i class="ti ti-users" style="font-size:13px"></i>
+              IDs de drivers disponíveis para no-show
+              <span style="font-size:11px;font-weight:400;color:#888;margin-left:6px">(opcional — do formulário WhatsApp)</span>
+            </label>
+            <textarea id="noshow-ids-input"
+              placeholder="Cole os IDs um por linha ou separados por vírgula:&#10;3928729&#10;2381804&#10;3994646&#10;..."
+              style="min-height:90px;font-family:monospace;font-size:12px"></textarea>
+            <div class="names-hint">
+              Quando informados, <b>somente esses drivers</b> serão usados na alocação — respeitando modal, volume, G/GG e cluster.
+              Se vazio, usa todos os disponíveis não escalados.
+            </div>
+            <div id="noshow-ids-status" style="display:none;margin-top:6px;font-size:12px"></div>
+          </div>
+
+          <button class="btn-primary" style="max-width:320px" onclick="gerarReversao()">
             <i class="ti ti-search"></i> Buscar rotas e gerar reversão
           </button>
         </div>
@@ -2616,6 +2634,13 @@ function gerarReversao(){
     allRows.filter(r=>r.status!=='sem_driver').map(r=>nrm(r.driver))
   );
 
+  // IDs informados via formulário WhatsApp (opcional)
+  const idsInput = (document.getElementById('noshow-ids-input')||{}).value || '';
+  const idsFiltro = idsInput
+    .replace(/[\r]/g,'').split(/[,;\n\s]+/)
+    .map(v => v.trim()).filter(v => v && /^\d+$/.test(v));
+  const usarFiltroIds = idsFiltro.length > 0;
+
   const available = dispData.map(d=>{
     const turno = parseTurno(String(d[todayCol]||''));
     if(!turno) return null;
@@ -2623,18 +2648,33 @@ function gerarReversao(){
               (turnoRev==='SD'&&(turno==='SD'||turno==='AMBOS'));
     if(!fit) return null;
     if(penalizados.includes(nrm(d['Driver Name']||''))) return null;
-    // Excluir quem já está na escala principal
     if(jaEscalados.has(nrm(d['Driver Name']||''))) return null;
+    const driverId = String(d['Driver ID']||'').trim();
+    // Se IDs informados, filtrar apenas esses
+    if(usarFiltroIds && !idsFiltro.includes(driverId)) return null;
     return{
-      name:String(d['Driver Name']||''),
-      nameNorm:nrm(d['Driver Name']||''),
-      id:String(d['Driver ID']||''),
-      cluster:String(d['Cluster']||''),
-      modal:String(d['Vehicle Type']||'').toUpperCase().replace('PASSAIO','PASSEIO'),
-      noShow:Number(d['No Show Time']||0),
+      name:     String(d['Driver Name']||''),
+      nameNorm: nrm(d['Driver Name']||''),
+      id:       driverId,
+      cluster:  String(d['Cluster']||''),
+      modal:    String(d['Vehicle Type']||'').toUpperCase().replace('PASSAIO','PASSEIO'),
+      noShow:   Number(d['No Show Time']||0),
       turno
     };
   }).filter(d=>d);
+
+  // Feedback dos IDs filtrados
+  const statusEl = document.getElementById('noshow-ids-status');
+  if(statusEl && usarFiltroIds){
+    const encontrados = available.length;
+    const naoEncontrados = idsFiltro.filter(id => !available.some(d => d.id === id));
+    statusEl.style.display = 'block';
+    statusEl.innerHTML = `✅ <b>${encontrados}</b> driver(s) encontrado(s) na disponibilidade`
+      + (naoEncontrados.length ? `<br>⚠️ IDs não encontrados: <span style="font-family:monospace">${naoEncontrados.join(', ')}</span>` : '');
+    statusEl.style.color = naoEncontrados.length ? '#e65100' : '#2e7d32';
+  } else if(statusEl){
+    statusEl.style.display = 'none';
+  }
 
   // Allocate
   reversaoRows = [];
