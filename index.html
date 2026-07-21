@@ -3633,7 +3633,14 @@ async function atribuirSPX(){
 
     try {
       const d = await jsonp(buildProxyURL('batchlote', {data: JSON.stringify(payload)}));
-      if(d.resultados){
+      if(d.ok === false){
+        // Proxy retornou erro — provavelmente versão antiga sem batchlote
+        spxLog(`  ⚠️  Proxy: ${d.msg}`);
+        if(d.msg && d.msg.includes('inválida')){
+          spxLog('  → Atualize o spx_proxy.gs para v5 e crie nova versão do deploy');
+          break;
+        }
+      } else if(d.resultados){
         d.resultados.forEach((r, idx) => {
           const nm = lote[idx] ? (lote[idx].driver||'').substring(0,28) : '';
           if(r.ok){
@@ -3643,6 +3650,8 @@ async function atribuirSPX(){
             erros.push(r);
           }
         });
+      } else {
+        spxLog(`  ⚠️  Resposta inesperada: ${JSON.stringify(d).substring(0,100)}`);
       }
     } catch(e){
       spxLog(`  ❌ Lote falhou: ${e.message}`);
