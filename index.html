@@ -1089,13 +1089,12 @@ async function loadEscala(inp){
     const text=await f.text();
     const parsed=Papa.parse(text,{header:true,skipEmptyLines:true});
     escData=parsed.data.filter(r=>{
-      const cl=(r['clusters']||r['cluster']||'').trim();
-      return r['Rota']&&cl&&cl!=='-';
+      return r['Rota'] && r['Ciclo'];  // aceita rotas com ou sem cluster
     }).map(r=>({
       turno:r['Ciclo']||'',
       rota:r['Rota']||'',
       letra:r['Gaiola']||r['Letra']||'',
-      cluster:(r['clusters']||r['cluster']||'').trim(),
+      cluster:((r['clusters']||r['cluster']||'').trim()) || (r['Bairro']||r['Cidade']||'').trim(),
       modal:(r['Tipo de veículo']||'').trim().toUpperCase(),
       volume:r['Volume total da rota (litros)']||0,
       bairro:r['Bairro']||'',
