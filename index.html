@@ -1462,11 +1462,12 @@ function runEscala(){
           driverFitCluster(d.cluster, rClusterFix)
         ).sort((a,b)=>a.noShow-b.noShow);
         if(cands.length){ fixDriver=cands[0]; fixModal=tryModal; break; }
-        // Fallback: aceita modal diferente
+        // Fallback: aceita modal diferente mas nunca MOTO em rota não-MOTO
         if(tryModal !== 'MOTO'){
           const fb = available.filter(d=>
             !used.has(d.nameNorm) &&
             !isPloatedByName(d.nameNorm) &&
+            d.modal !== 'MOTO' &&
             driverFitCluster(d.cluster, rClusterFix)
           ).sort((a,b)=>a.noShow-b.noShow);
           if(fb.length){ fixDriver=fb[0]; fixModal=fb[0].modal; break; }
@@ -1505,11 +1506,12 @@ function runEscala(){
         ).sort((a,b)=>a.noShow-b.noShow);
         if(cands.length){ fixDriver=cands[0]; fixModal=tryModal; break; }
       }
-      // Fallback: qualquer modal compatível com o cluster
+      // Fallback: qualquer modal EXCETO MOTO em rota não-MOTO
       if(!fixDriver && moFix[0]!=='MOTO'){
         const fb = available.filter(d=>
           !used.has(d.nameNorm) &&
           !isPloatedByName(d.nameNorm) &&
+          d.modal !== 'MOTO' &&          // nunca aloca MOTO em rota não-MOTO
           driverFitCluster(d.cluster, rClusterFix)
         ).sort((a,b)=>a.noShow-b.noShow);
         if(fb.length){ fixDriver=fb[0]; fixModal=fb[0].modal; }
