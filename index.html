@@ -2625,6 +2625,18 @@ function gerarReversao(){
     return;
   }
 
+  // Auto-detectar turno pelo ciclo das rotas encontradas
+  const ciclosNoshow = [...new Set(rotasNoshow.map(r=>nrm(r.turno||'')))];
+  const temPM1 = ciclosNoshow.some(t=>t==='pm1'||t==='sd');
+  const temAM  = ciclosNoshow.some(t=>t==='am');
+  const turnoAutoRev = temPM1 && !temAM ? 'SD' : temAM && !temPM1 ? 'AM' : turnoRev;
+  if(turnoAutoRev !== turnoRev){
+    // Atualizar o radio sem pedir confirmação
+    const radioAutoRev = document.querySelector(`input[name="turno-rev"][value="${turnoAutoRev}"]`);
+    if(radioAutoRev) radioAutoRev.checked = true;
+  }
+  const turnoFinal = turnoAutoRev;
+
   // Build available pool - drivers not yet used today
   const escaladosHoje = getEscaladosHoje();
   const keys = Object.keys(dispData[0]||{});
@@ -2640,18 +2652,19 @@ function gerarReversao(){
   const idsInput = (document.getElementById('noshow-ids-input')||{}).value || '';
   const idsFiltro = idsInput
     .replace(/[\r]/g,'').split(/[,;\n\s]+/)
-    .map(v => v.trim()).filter(v => v && /^\d+$/.test(v));
+    .map(v => v.trim().split('.')[0]) // remove .0
+    .filter(v => v && /^\d+$/.test(v) && v.length <= 10); // max 10 dígitos
   const usarFiltroIds = idsFiltro.length > 0;
 
   const available = dispData.map(d=>{
     const turno = parseTurno(String(d[todayCol]||''));
     if(!turno) return null;
-    const fit=(turnoRev==='AM'&&(turno==='AM'||turno==='AMBOS'))||
-              (turnoRev==='SD'&&(turno==='SD'||turno==='AMBOS'));
+    const fit=(turnoFinal==='AM'&&(turno==='AM'||turno==='AMBOS'))||
+              (turnoFinal==='SD'&&(turno==='SD'||turno==='AMBOS'));
     if(!fit) return null;
     if(penalizados.includes(nrm(d['Driver Name']||''))) return null;
     if(jaEscalados.has(nrm(d['Driver Name']||''))) return null;
-    const driverId = String(d['Driver ID']||'').trim();
+    const driverId = String(d['Driver ID']||'').trim().split('.')[0]; // remove .0 de floats
     // Se IDs informados, filtrar apenas esses
     if(usarFiltroIds && !idsFiltro.includes(driverId)) return null;
     return{
@@ -2670,9 +2683,11 @@ function gerarReversao(){
   if(statusEl && usarFiltroIds){
     const encontrados = available.length;
     const naoEncontrados = idsFiltro.filter(id => !available.some(d => d.id === id));
+    const invalidos = idsInput.replace(/[\r]/g,'').split(/[,;\n\s]+/).map(v=>v.trim()).filter(v=>v&&/^\d+$/.test(v)&&v.length>10);
     statusEl.style.display = 'block';
     statusEl.innerHTML = `✅ <b>${encontrados}</b> driver(s) encontrado(s) na disponibilidade`
-      + (naoEncontrados.length ? `<br>⚠️ IDs não encontrados: <span style="font-family:monospace">${naoEncontrados.join(', ')}</span>` : '');
+      + (invalidos.length ? `<br>⚠️ IDs inválidos ignorados (>10 dígitos): <span style="font-family:monospace">${invalidos.join(', ')}</span>` : '')
+      + (naoEncontrados.length ? `<br>⚠️ IDs não encontrados na disp.: <span style="font-family:monospace">${naoEncontrados.slice(0,10).join(', ')}${naoEncontrados.length>10?' ...':''}  (${naoEncontrados.length})</span>` : '');
     statusEl.style.color = naoEncontrados.length ? '#e65100' : '#2e7d32';
   } else if(statusEl){
     statusEl.style.display = 'none';
