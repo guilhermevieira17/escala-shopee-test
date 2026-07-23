@@ -2698,6 +2698,7 @@ function gerarReversao(){
     const originalDriver   = originalRow ? originalRow.driver   : '';
     const originalDriverId = originalRow ? originalRow.driverId : '';
 
+    // Passagem 1: modal correto + cluster
     for(const tryModal of modalOrder){
       const cands = available.filter(d=>
         !usedRev.has(d.nameNorm)&&
@@ -2705,6 +2706,26 @@ function gerarReversao(){
         driverFitCluster(d.cluster, rCluster)
       ).sort((a,b)=>a.noShow-b.noShow);
       if(cands.length){ chosen=cands[0]; allocModal=tryModal; status=tryModal===modalPedido?'ok':'substituido'; break; }
+    }
+    // Passagem 2: qualquer modal NÃO-MOTO + cluster (se rota não é MOTO)
+    if(!chosen && modalPedido!=='MOTO'){
+      const cands2 = available.filter(d=>
+        !usedRev.has(d.nameNorm)&&
+        d.modal!=='MOTO'&&           // nunca MOTO em rota não-MOTO
+        driverFitCluster(d.cluster, rCluster)
+      ).sort((a,b)=>a.noShow-b.noShow);
+      if(cands2.length){ chosen=cands2[0]; allocModal=cands2[0].modal; status='substituido'; }
+    }
+    // Passagem 3: fallback sem cluster (modal correto, sem MOTO)
+    if(!chosen && modalPedido!=='MOTO'){
+      for(const tryModal of modalOrder){
+        if(tryModal==='MOTO') continue;
+        const fb = available.filter(d=>
+          !usedRev.has(d.nameNorm)&&
+          d.modal===tryModal
+        ).sort((a,b)=>a.noShow-b.noShow);
+        if(fb.length){ chosen=fb[0]; allocModal=tryModal; status='substituido'; break; }
+      }
     }
     if(!chosen) status='sem_driver';
     if(chosen) usedRev.add(chosen.nameNorm);
