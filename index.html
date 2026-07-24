@@ -1094,7 +1094,7 @@ async function loadEscala(inp){
       turno:r['Ciclo']||'',
       rota:r['Rota']||'',
       letra:r['Gaiola']||r['Letra']||'',
-      cluster:((r['clusters']||r['cluster']||'').trim()) || (r['Bairro']||r['Cidade']||'').trim(),
+      cluster:((r['clusters']||r['cluster']||'').trim()), // sem fallback para Bairro (formato incompatível)
       modal:(r['Tipo de veículo']||'').trim().toUpperCase(),
       volume:r['Volume total da rota (litros)']||0,
       bairro:r['Bairro']||'',
@@ -2721,17 +2721,17 @@ function gerarReversao(){
       ).sort((a,b)=>a.noShow-b.noShow);
       if(cands.length){ chosen=cands[0]; allocModal=tryModal; status=tryModal===modalPedido?'ok':'substituido'; break; }
     }
-    // Passagem 2: qualquer modal NÃO-MOTO + cluster (se rota não é MOTO)
+    // Passagem 2: modal diferente mas mesmo cluster
     if(!chosen && modalPedido!=='MOTO'){
       const cands2 = available.filter(d=>
         !usedRev.has(d.nameNorm)&&
-        d.modal!=='MOTO'&&           // nunca MOTO em rota não-MOTO
+        d.modal!=='MOTO'&&
         driverFitCluster(d.cluster, rCluster)
       ).sort((a,b)=>a.noShow-b.noShow);
       if(cands2.length){ chosen=cands2[0]; allocModal=cands2[0].modal; status='substituido'; }
     }
-    // Passagem 3: fallback sem cluster (modal correto, sem MOTO)
-    if(!chosen && modalPedido!=='MOTO'){
+    // Passagem 3: fallback sem cluster — APENAS quando rota não tem cluster definido
+    if(!chosen && modalPedido!=='MOTO' && !rCluster){
       for(const tryModal of modalOrder){
         if(tryModal==='MOTO') continue;
         const fb = available.filter(d=>
