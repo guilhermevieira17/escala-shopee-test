@@ -2696,6 +2696,21 @@ function gerarReversao(){
   reversaoRows = [];
   const usedRev = new Set();
 
+  // Ordenar rotas por dificuldade: menos drivers compatíveis primeiro
+  // Garante que rotas raras (ex: Centro, Jardim Botânico) sejam alocadas antes
+  rotasNoshow.sort((a, b) => {
+    const rClA = a.cluster || '', rClB = b.cluster || '';
+    const fitA = available.filter(d => d.modal!=='MOTO' && driverFitCluster(d.cluster, rClA)).length;
+    const fitB = available.filter(d => d.modal!=='MOTO' && driverFitCluster(d.cluster, rClB)).length;
+    return fitA - fitB; // rotas mais difíceis primeiro
+  });
+
+  // Ordenar por dificuldade: rotas com menos drivers compatíveis primeiro
+  rotasNoshow.sort((a,b)=>{
+    const fa=available.filter(d=>d.modal!=='MOTO'&&driverFitCluster(d.cluster,a.cluster||'')).length;
+    const fb=available.filter(d=>d.modal!=='MOTO'&&driverFitCluster(d.cluster,b.cluster||'')).length;
+    return fa-fb;
+  });
   rotasNoshow.forEach(rota=>{
     const rCluster = rota.cluster;
     const modalOrder = getModalOrder(rota.volume, rota.modal||'', rota.g||0, rota.gg||0);
