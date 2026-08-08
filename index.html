@@ -902,12 +902,14 @@ function driverFitCluster(dc,rc){
   if(d.includes('all')) return true;
   // Driver sem cluster → aceita qualquer rota
   if(!d || d==='-') return true;
+  // Driver sem cluster → aceita qualquer rota
+  if(!d || d==='-') return true;
   // Driver clusters: separados por vírgula
   const dParts = d.split(',').map(p=>p.trim()).filter(p=>p);
   // Rota clusters: pode ter múltiplos separados por ; ou ,
   const rParts = nrm(rc).split(/[;,]/).map(p=>p.trim()).filter(p=>p);
   // Match: pelo menos UM cluster da rota deve estar na lista do driver
-  return rParts.some(rp => dParts.some(dp => dp===rp || dp.includes(rp) || rp.includes(dp)));
+  return rParts.some(rp => dParts.some(dp => dp===rp)); // match exato — evita Almirante Tamandaré cobrir Almirante Tamandaré_Rural
 }
 
 function parseVol(v){
