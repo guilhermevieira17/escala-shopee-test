@@ -1222,8 +1222,22 @@ function runEscala(){
     return true;
   });
 
-  // Ordenar por gaiola: A-1, A-2, A-3... B-1, B-2...
+  // Ordenar rotas para alocação:
+  // 1ª chave: score de prioridade DESC (maior volume+GG+G primeiro → garante Fiorino para rotas pesadas)
+  // 2ª chave: gaiola ASC (dentro de mesmo score, mantém ordem alfabética)
+  function rotaPrioridade(r){
+    const v = parseVol(r.volume);
+    const gg = parseInt(r.gg)||0;
+    const g  = parseInt(r.g)||0;
+    const mo = getModalOrder(v, r.modal, g, gg)[0];
+    // Rotas que precisam Fiorino/VAN ganham bônus para serem alocadas antes
+    const bonusModal = (mo==='VAN'||mo==='FIORINO') ? 100000 : 0;
+    return bonusModal + v + gg*200 + g*50;
+  }
   rotasFiltradas.sort((a,b)=>{
+    const pa = rotaPrioridade(a), pb = rotaPrioridade(b);
+    if(pa !== pb) return pb - pa; // maior score (maior rota) primeiro
+    // Empate: ordem por gaiola
     const parse = g => {
       const m = (g||'').match(/^([A-Za-z]+)-?(\d+)$/);
       return m ? [m[1].toUpperCase(), parseInt(m[2])] : [g||'', 0];
